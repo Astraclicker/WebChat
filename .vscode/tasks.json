@@ -1,0 +1,39 @@
+// {
+//   "version": "2.0.0",
+//   "tasks": [
+//     {
+//       "label": "Ensure Bin Directory",
+//       "type": "process",
+//       "command": "/usr/bin/mkdir",
+//       "args": [
+//         "-p",
+//         "${workspaceFolder}/bin"
+//       ],
+//       "problemMatcher": []
+//     },
+//     {
+//       "label": "Build Active File",
+//       "type": "process",
+//       "command": "/usr/bin/g++",
+//       "args": [
+//         "-std=c++20",
+//         "-Wall",
+//         "-Wextra",
+//         "-g",
+//         "${file}",
+//         "-o",
+//         "${workspaceFolder}/bin/${fileBasenameNoExtension}"
+//       ],
+//       "options": {
+//         "cwd": "${workspaceFolder}"
+//       },
+//       "dependsOn": "Ensure Bin Directory",
+//       "dependsOrder": "sequence",
+//       "group": {
+//         "kind": "build",
+//         "isDefault": true
+//       },
+//       "problemMatcher": "$gcc"
+//     }
+//   ]
+// }
