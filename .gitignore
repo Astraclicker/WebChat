@@ -1,0 +1,9 @@
+server/.idea
+server/build_debug
+server/build_release
+server/bin
+
+client/.idea
+client/build_debug
+client/build_release
+client/bin
