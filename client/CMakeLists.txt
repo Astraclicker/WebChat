@@ -8,18 +8,20 @@ set(CMAKE_AUTOUIC ON)
 include(FetchContent)
 
 #使用utf-8
-if (MSVC)
-    add_compile_options(/utf-8)
-else ()
-    add_compile_options(-finput-charset=UTF-8 -fexec-charset=UTF-8)
-endif ()
+if(MSVC)
+        add_compile_options(/utf-8)
+else()
+        add_compile_options(-finput-charset=UTF-8 -fexec-charset=UTF-8)
+endif()
 
-#设置Qt路径
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    set(CMAKE_PREFIX_PATH "D:/QT/6.11.1/mingw_64" CACHE PATH "" FORCE)
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    set(CMAKE_PREFIX_PATH "D:/QT/6.11.1/msvc2022_64" CACHE PATH "" FORCE)
-endif ()
+#Windows设置Qt路径
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+        if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+                set(CMAKE_PREFIX_PATH "D:/QT/6.11.1/mingw_64" CACHE PATH "" FORCE)
+        elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+                set(CMAKE_PREFIX_PATH "D:/QT/6.11.1/msvc2022_64" CACHE PATH "" FORCE)
+        endif()
+endif()
 
 #导入qt
 find_package(Qt6
@@ -32,10 +34,10 @@ find_package(Qt6
 )
 
 #按配置将可执行文件输出到bin目录
-foreach (_cfg Debug Release RelWithDebInfo MinSizeRel)
-    string(TOUPPER "${_cfg}" _CFG)
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${_CFG} ${PROJECT_SOURCE_DIR}/bin/${_cfg})
-endforeach ()
+foreach(_cfg Debug Release RelWithDebInfo MinSizeRel)
+        string(TOUPPER "${_cfg}" _CFG)
+        set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${_CFG} ${PROJECT_SOURCE_DIR}/bin/${_cfg})
+endforeach()
 unset(_cfg)
 unset(_CFG)
 
