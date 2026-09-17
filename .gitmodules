@@ -4,3 +4,12 @@
 [submodule "client/lib/boost"]
 	path = client/lib/boost
 	url = https://github.com/boostorg/boost.git
+[submodule "server/lib/SQL++/lib/SQLiteCpp"]
+	path = server/lib/SQL++/lib/SQLiteCpp
+	url = https://github.com/SRombauts/SQLiteCpp
+[submodule "server/lib/SQL++/lib/redis-plus-plus"]
+	path = server/lib/SQL++/lib/redis-plus-plus
+	url = https://github.com/sewenew/redis-plus-plus.git
+[submodule "server/lib/SQL++/lib/hiredis"]
+	path = server/lib/SQL++/lib/hiredis
+	url = https://github.com/redis/hiredis.git
