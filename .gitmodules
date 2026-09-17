@@ -13,3 +13,12 @@
 [submodule "server/lib/SQL++/lib/hiredis"]
 	path = server/lib/SQL++/lib/hiredis
 	url = https://github.com/redis/hiredis.git
+[submodule "client/lib/SQL++/lib/SQLiteCpp"]
+	path = client/lib/SQL++/lib/SQLiteCpp
+	url = https://github.com/SRombauts/SQLiteCpp.git
+[submodule "client/lib/SQL++/lib/redis-plus-plus"]
+	path = client/lib/SQL++/lib/redis-plus-plus
+	url = https://github.com/sewenew/redis-plus-plus.git
+[submodule "client/lib/SQL++/lib/hiredis"]
+	path = client/lib/SQL++/lib/hiredis
+	url = https://github.com/redis/hiredis.git
