@@ -1,13 +1,37 @@
 #include "web.h"
+#include <cstdlib>
 #include <iostream>
 #include <memory>
 #include "../MySQL/MySql.h"
+
+namespace
+{
+    std::string get_environment_value(const char *name, const char *fallback)
+    {
+        const char *value = std::getenv(name);
+        return value == nullptr ? fallback : value;
+    }
+
+    unsigned int get_database_port()
+    {
+        return static_cast<unsigned int>(std::stoul(
+            get_environment_value("WEBCHAT_DB_PORT", "3306")
+        ));
+    }
+}
+
 //构造函数
 session::session(tcp::socket socket, std::set<std::shared_ptr<session> > &sessions)
-    : mysqlAPI("127.0.0.1", astra_sql::MySQL_DEFAULT_PORT, "astraclicker", "1108372699a@A"),
+    : mysqlAPI(
+          get_environment_value("WEBCHAT_DB_HOST", "127.0.0.1"),
+          get_database_port(),
+          get_environment_value("WEBCHAT_DB_USER", "webchat"),
+          get_environment_value("WEBCHAT_DB_PASSWORD", "")
+      ),
       sessionSocker(std::move(socket)),
-      sessionSet(sessions) {
-    mysqlAPI.switchDatabase("ChatServer");
+      sessionSet(sessions)
+{
+    mysqlAPI.switchDatabase(get_environment_value("WEBCHAT_DB_NAME", "ChatServer"));
 }
 
 //启动接口

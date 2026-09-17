@@ -2,8 +2,6 @@ project(Web)
 
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
-FetchContent_MakeAvailable(boost)
-
 add_library(
         ${PROJECT_NAME}
         SHARED
@@ -19,5 +17,5 @@ target_include_directories(
 target_link_libraries(
         ${PROJECT_NAME}
         PUBLIC
-        Boost::asio
+        Boost::headers
 )

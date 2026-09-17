@@ -67,22 +67,22 @@ void chatClient::doWrite() {
         });
 }
 
-void chatClient::write(msg &Msg) {
+void chatClient::write(message &outgoing_message) {
     nlohmann::json sendJson;
-    switch (Msg.msgType) {
-        case msgType::text: {
+    switch (outgoing_message.type) {
+        case message_type::text: {
             sendJson["type"] = "text";
-            sendJson["data"] = nlohmann::json::parse(Msg.data);
+            sendJson["data"] = nlohmann::json::parse(outgoing_message.data);
             break;
         }
-        case msgType::loginRequested: {
+        case message_type::login_requested: {
             sendJson["type"] = "loginRequested";
-            sendJson["data"] = nlohmann::json::parse(Msg.data);
+            sendJson["data"] = nlohmann::json::parse(outgoing_message.data);
             break;
         }
-        case msgType::createUserRequested: {
+        case message_type::create_user_requested: {
             sendJson["type"] = "createUserRequested";
-            sendJson["data"] = nlohmann::json::parse(Msg.data);
+            sendJson["data"] = nlohmann::json::parse(outgoing_message.data);
             break;
         }
     }

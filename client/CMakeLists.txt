@@ -1,11 +1,11 @@
-cmake_minimum_required(VERSION 4.2.3)
+cmake_minimum_required(VERSION 3.28)
 project(client)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
-include(FetchContent)
+find_package(Boost REQUIRED)
 
 #使用utf-8
 if(MSVC)
@@ -29,7 +29,6 @@ find_package(Qt6
         Core
         Gui
         Widgets
-        Multimedia
         REQUIRED
 )
 
@@ -41,11 +40,6 @@ endforeach()
 unset(_cfg)
 unset(_CFG)
 
-#设置路径宏
-FetchContent_Declare(
-        boost
-        SOURCE_DIR ${CMAKE_SOURCE_DIR}/lib/boost
-)
 set(INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
 
 #设置子目录
@@ -56,13 +50,14 @@ add_executable(
         main.cpp
 )
 
-#自动生成qt动态链接库
-set(WINDEPLOYQT_EXE "${CMAKE_PREFIX_PATH}/bin/windeployqt")
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND "${WINDEPLOYQT_EXE}" "$<TARGET_FILE:${PROJECT_NAME}>"
-        WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
-        COMMENT "Deploy Qt runtime dependencies"
-)
+# Windows 下自动复制 Qt 运行库；Linux 直接使用系统安装的 Qt。
+if(WIN32)
+        find_program(WINDEPLOYQT_EXE windeployqt HINTS "${CMAKE_PREFIX_PATH}/bin" REQUIRED)
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND "${WINDEPLOYQT_EXE}" "$<TARGET_FILE:${PROJECT_NAME}>"
+                COMMENT "Deploy Qt runtime dependencies"
+        )
+endif()
 
 target_include_directories(
         ${PROJECT_NAME}
@@ -74,9 +69,7 @@ target_include_directories(
 target_link_libraries(
         ${PROJECT_NAME}
         PUBLIC
-        Boost::asio
+        Boost::headers
         Web
         GUI
 )
-
-

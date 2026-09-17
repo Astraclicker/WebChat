@@ -1,8 +1,7 @@
 project(MySQL)
 
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
-FetchContent_MakeAvailable(SQL++)
-FetchContent_MakeAvailable(boost)
+add_subdirectory(${SQL++_DIR} ${CMAKE_BINARY_DIR}/SQL++)
 
 add_library(
         ${PROJECT_NAME}
@@ -21,5 +20,5 @@ target_link_libraries(
         ${PROJECT_NAME}
         PUBLIC
         MySQL++
-        Boost::asio
+        Boost::headers
 )

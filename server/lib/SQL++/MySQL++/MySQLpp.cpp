@@ -1,5 +1,6 @@
 #include <sstream>
 #include <iostream>
+#include <stdexcept>
 
 #include "MySQLpp.h"
 
@@ -12,8 +13,7 @@ namespace astra_sql {
             conn.reset(driver->connect("tcp://" + host + ":" + std::to_string(port), UserName, password));
             statement.reset(conn->createStatement());
         } catch (const std::exception &e) {
-            std::cerr << e.what() << std::endl;
-            return;
+            throw std::runtime_error(std::string("MySQL connection failed: ") + e.what());
         }
         std::clog << "MySQL connect successfully" << std::endl;
     }

@@ -22,11 +22,18 @@ mainWidget::mainWidget(
     btnSend->setFixedSize(200, 100);
     btnSend->show();
 
-    //获取屏幕长宽
-    const QScreen *currentScreen = QGuiApplication::screenAt(QCursor::pos());
-    const QRect geom = currentScreen->geometry();
-    this->screenH = geom.height();
-    this->screenW = geom.width();
+    // WSLg/Wayland 下，鼠标位置可能暂时不属于 Qt 已识别的任何屏幕。
+    const QScreen *current_screen = QGuiApplication::screenAt(QCursor::pos());
+    if (current_screen == nullptr)
+    {
+        current_screen = QGuiApplication::primaryScreen();
+    }
+
+    const QRect screen_geometry = current_screen == nullptr
+                                      ? QRect(0, 0, 1920, 1080)
+                                      : current_screen->availableGeometry();
+    this->screenH = screen_geometry.height();
+    this->screenW = screen_geometry.width();
 
     //创建子窗口
     _loginWidget = new loginWidget(nullptr, screenW, screenH);
@@ -37,8 +44,8 @@ mainWidget::mainWidget(
         nlohmann::json jsonData;
         jsonData["userName"] = _loginWidget->getUserName();
         jsonData["password"] = _loginWidget->getPassword();
-        msg temp{.data = jsonData.dump(), .msgType = msgType::loginRequested};
-        webAPI.write(temp);
+        message outgoing_message{.data = jsonData.dump(), .type = message_type::login_requested};
+        webAPI.write(outgoing_message);
         if (checkReturn(webAPI, this)) {
             this->show();
             _loginWidget->close();
@@ -53,8 +60,8 @@ mainWidget::mainWidget(
         //测试版本，只发给root
         jsonData["receiver"] = "root";
         jsonData["text"] = textEdit->toPlainText().toStdString();
-        msg temp{.data = jsonData.dump(), .msgType = msgType::text};
-        webAPI.write(temp);
+        message outgoing_message{.data = jsonData.dump(), .type = message_type::text};
+        webAPI.write(outgoing_message);
     });
 
     //连接创建用户请求
@@ -73,8 +80,8 @@ mainWidget::mainWidget(
         nlohmann::json jsonData;
         jsonData["userName"] = _createUserWidget->getUserName();
         jsonData["password"] = _createUserWidget->getPassword();
-        msg temp{.data = jsonData.dump(), .msgType = msgType::createUserRequested};
-        webAPI.write(temp);
+        message outgoing_message{.data = jsonData.dump(), .type = message_type::create_user_requested};
+        webAPI.write(outgoing_message);
         if (checkReturn(webAPI, _createUserWidget)) {
             _createUserWidget->close();
             _loginWidget->show();

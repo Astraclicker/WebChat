@@ -30,7 +30,7 @@ public:
     chatClient(boost::asio::io_context &io, const tcp::resolver::results_type &endpoints);
 
     //由发送线程调用,把要发送的消息投递到事件循环线程
-    void write(msg &Msg);
+    void write(message &outgoing_message);
 
     //断开与服务端的连接
     void close();

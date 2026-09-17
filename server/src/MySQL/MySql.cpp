@@ -1,5 +1,6 @@
 #include "MySql.h"
 #include <iostream>
+#include <memory>
 #include <vector>
 
 //登录
@@ -29,10 +30,10 @@ void login(
     } else {
         back["data"] = "failed";
     }
-    auto sendMsg = back.dump() + '\n';
+    auto send_msg = std::make_shared<std::string>(back.dump() + '\n');
     boost::asio::async_write(
-        sessionSocker, boost::asio::buffer(sendMsg),
-        [](const boost::system::error_code &, size_t) {
+        sessionSocker, boost::asio::buffer(*send_msg),
+        [send_msg](const boost::system::error_code &, size_t) {
         });
 }
 
@@ -66,10 +67,10 @@ void createUser(
         back["data"] = "failed";
     }
 
-    auto sendMsg = back.dump() + '\n';
+    auto send_msg = std::make_shared<std::string>(back.dump() + '\n');
 
     boost::asio::async_write(
-        sessionSocker, boost::asio::buffer(sendMsg),
-        [](const boost::system::error_code &, size_t) {
+        sessionSocker, boost::asio::buffer(*send_msg),
+        [send_msg](const boost::system::error_code &, size_t) {
         });
 }
