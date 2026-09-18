@@ -1,5 +1,5 @@
-/home/curiosity/mssa/WebChat_self/client/build/src/GUI/GUI_autogen/EWIEGA46WW/moc_serverWidget.cpp: /home/curiosity/mssa/WebChat_self/client/src/GUI/serverWidget.h \
-  /home/curiosity/mssa/WebChat_self/client/build/src/GUI/GUI_autogen/moc_predefs.h \
+/home/curiosity/mssa/web_chat_test/client/build/src/GUI/GUI_autogen/EWIEGA46WW/moc_serverWidget.cpp: /home/curiosity/mssa/web_chat_test/client/src/GUI/serverWidget.h \
+  /home/curiosity/mssa/web_chat_test/client/build/src/GUI/GUI_autogen/moc_predefs.h \
   /usr/include/alloca.h \
   /usr/include/asm-generic/errno-base.h \
   /usr/include/asm-generic/errno.h \

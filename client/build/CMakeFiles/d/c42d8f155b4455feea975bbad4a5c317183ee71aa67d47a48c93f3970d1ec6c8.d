@@ -1,0 +1,5 @@
+src/Web/Web_autogen/timestamp: \
+  /home/curiosity/mssa/web_chat_test/client/src/Web/CMakeLists.txt \
+  /home/curiosity/mssa/web_chat_test/client/src/Web/client.cpp \
+  /home/curiosity/mssa/web_chat_test/client/src/Web/client.h \
+  /usr/bin/cmake

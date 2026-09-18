@@ -1,4 +1,4 @@
-# Install script for directory: /home/curiosity/mssa/WebChat_self/client/src
+# Install script for directory: /home/curiosity/mssa/web_chat_test/client/src
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -12,7 +12,7 @@ if(NOT DEFINED CMAKE_INSTALL_CONFIG_NAME)
     string(REGEX REPLACE "^[^A-Za-z0-9_]+" ""
            CMAKE_INSTALL_CONFIG_NAME "${BUILD_TYPE}")
   else()
-    set(CMAKE_INSTALL_CONFIG_NAME "Release")
+    set(CMAKE_INSTALL_CONFIG_NAME "Debug")
   endif()
   message(STATUS "Install configuration: \"${CMAKE_INSTALL_CONFIG_NAME}\"")
 endif()
@@ -44,11 +44,11 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/home/curiosity/mssa/WebChat_self/client/build/src/GUI/cmake_install.cmake")
+  include("/home/curiosity/mssa/web_chat_test/client/build/src/GUI/cmake_install.cmake")
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/home/curiosity/mssa/WebChat_self/client/build/src/Web/cmake_install.cmake")
+  include("/home/curiosity/mssa/web_chat_test/client/build/src/Web/cmake_install.cmake")
 endif()
 

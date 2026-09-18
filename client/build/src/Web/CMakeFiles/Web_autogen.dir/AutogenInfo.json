@@ -1,25 +1,25 @@
 {
-	"BUILD_DIR" : "/home/curiosity/mssa/WebChat_self/client/build/src/Web/Web_autogen",
-	"CMAKE_BINARY_DIR" : "/home/curiosity/mssa/WebChat_self/client/build",
-	"CMAKE_CURRENT_BINARY_DIR" : "/home/curiosity/mssa/WebChat_self/client/build/src/Web",
-	"CMAKE_CURRENT_SOURCE_DIR" : "/home/curiosity/mssa/WebChat_self/client/src/Web",
+	"BUILD_DIR" : "/home/curiosity/mssa/web_chat_test/client/build/src/Web/Web_autogen",
+	"CMAKE_BINARY_DIR" : "/home/curiosity/mssa/web_chat_test/client/build",
+	"CMAKE_CURRENT_BINARY_DIR" : "/home/curiosity/mssa/web_chat_test/client/build/src/Web",
+	"CMAKE_CURRENT_SOURCE_DIR" : "/home/curiosity/mssa/web_chat_test/client/src/Web",
 	"CMAKE_EXECUTABLE" : "/usr/bin/cmake",
-	"CMAKE_LIST_FILES" : [ "/home/curiosity/mssa/WebChat_self/client/src/Web/CMakeLists.txt" ],
-	"CMAKE_SOURCE_DIR" : "/home/curiosity/mssa/WebChat_self/client",
-	"DEP_FILE" : "/home/curiosity/mssa/WebChat_self/client/build/src/Web/Web_autogen/deps",
+	"CMAKE_LIST_FILES" : [ "/home/curiosity/mssa/web_chat_test/client/src/Web/CMakeLists.txt" ],
+	"CMAKE_SOURCE_DIR" : "/home/curiosity/mssa/web_chat_test/client",
+	"DEP_FILE" : "/home/curiosity/mssa/web_chat_test/client/build/src/Web/Web_autogen/deps",
 	"DEP_FILE_RULE_NAME" : "Web_autogen/timestamp",
 	"HEADERS" : 
 	[
 		[
-			"/home/curiosity/mssa/WebChat_self/client/src/Web/client.h",
+			"/home/curiosity/mssa/web_chat_test/client/src/Web/client.h",
 			"MU",
 			"EWIEGA46WW/moc_client.cpp",
 			null
 		]
 	],
 	"HEADER_EXTENSIONS" : [ "h", "hh", "h++", "hm", "hpp", "hxx", "in", "txx" ],
-	"INCLUDE_DIR" : "/home/curiosity/mssa/WebChat_self/client/build/src/Web/Web_autogen/include",
-	"MOC_COMPILATION_FILE" : "/home/curiosity/mssa/WebChat_self/client/build/src/Web/Web_autogen/mocs_compilation.cpp",
+	"INCLUDE_DIR" : "/home/curiosity/mssa/web_chat_test/client/build/src/Web/Web_autogen/include",
+	"MOC_COMPILATION_FILE" : "/home/curiosity/mssa/web_chat_test/client/build/src/Web/Web_autogen/mocs_compilation.cpp",
 	"MOC_DEFINITIONS" : [ "Web_EXPORTS" ],
 	"MOC_DEPEND_FILTERS" : 
 	[
@@ -30,7 +30,7 @@
 	],
 	"MOC_INCLUDES" : 
 	[
-		"/home/curiosity/mssa/WebChat_self/client/include",
+		"/home/curiosity/mssa/web_chat_test/client/include",
 		"/usr/include",
 		"/usr/include/c++/13",
 		"/usr/include/x86_64-linux-gnu/c++/13",
@@ -58,21 +58,21 @@
 		"-c",
 		"/usr/share/cmake-3.28/Modules/CMakeCXXCompilerABI.cpp"
 	],
-	"MOC_PREDEFS_FILE" : "/home/curiosity/mssa/WebChat_self/client/build/src/Web/Web_autogen/moc_predefs.h",
+	"MOC_PREDEFS_FILE" : "/home/curiosity/mssa/web_chat_test/client/build/src/Web/Web_autogen/moc_predefs.h",
 	"MOC_RELAXED_MODE" : false,
 	"MOC_SKIP" : [],
 	"MULTI_CONFIG" : false,
 	"PARALLEL" : 8,
-	"PARSE_CACHE_FILE" : "/home/curiosity/mssa/WebChat_self/client/build/src/Web/CMakeFiles/Web_autogen.dir/ParseCache.txt",
+	"PARSE_CACHE_FILE" : "/home/curiosity/mssa/web_chat_test/client/build/src/Web/CMakeFiles/Web_autogen.dir/ParseCache.txt",
 	"QT_MOC_EXECUTABLE" : "/usr/lib/qt6/libexec/moc",
 	"QT_UIC_EXECUTABLE" : "/usr/lib/qt6/libexec/uic",
 	"QT_VERSION_MAJOR" : 6,
 	"QT_VERSION_MINOR" : 4,
-	"SETTINGS_FILE" : "/home/curiosity/mssa/WebChat_self/client/build/src/Web/CMakeFiles/Web_autogen.dir/AutogenUsed.txt",
+	"SETTINGS_FILE" : "/home/curiosity/mssa/web_chat_test/client/build/src/Web/CMakeFiles/Web_autogen.dir/AutogenUsed.txt",
 	"SOURCES" : 
 	[
 		[
-			"/home/curiosity/mssa/WebChat_self/client/src/Web/client.cpp",
+			"/home/curiosity/mssa/web_chat_test/client/src/Web/client.cpp",
 			"MU",
 			null
 		]

@@ -28,14 +28,26 @@ MySQL 127.0.0.1:3306 / ChatServer.users
 
 ### 1. 克隆仓库
 
-当前构建使用系统安装的 Boost，且服务端只构建实际使用的 MySQL 模块，因此不需要下载体积很大的递归子模块。
+当前构建使用系统安装的 Boost，服务端数据链路只构建 MySQL 模块，客户端也没有接入 SQL++。因此，编译和运行当前程序只需要克隆主仓库，不必下载仓库中的子模块。
 
 ```bash
 git clone https://github.com/anarchycuriosity/web_chat_test.git WebChat
 cd WebChat
 ```
 
-如果你正在本仓库的未推送工作树中验证修改，请不要重新克隆远端旧版本；保持在当前仓库根目录，直接从第 2 步开始。
+仓库仍保留了 Redis++、hiredis 和 SQLiteCpp 的封装源码，供后续扩展和阅读。如果需要阅读这些模块并获得完整的 IntelliSense 跳转，再按需初始化对应子模块：
+
+```bash
+git submodule update --init --recursive -- \
+    client/lib/SQL++/lib/SQLiteCpp \
+    client/lib/SQL++/lib/hiredis \
+    client/lib/SQL++/lib/redis-plus-plus \
+    server/lib/SQL++/lib/SQLiteCpp \
+    server/lib/SQL++/lib/hiredis \
+    server/lib/SQL++/lib/redis-plus-plus
+```
+
+上述命令不会下载 `client/lib/boost` 和 `server/lib/boost`。如果主仓库已经克隆完成，也不需要重新克隆；进入仓库根目录后单独执行该命令即可。如果你正在本仓库的未推送工作树中验证修改，也不要重新克隆远端旧版本。
 
 ### 2. 安装编译和运行依赖
 
@@ -171,6 +183,18 @@ printf '%s\n' "$DISPLAY"
 若输出为空，说明当前 WSL 没有可用的图形显示环境；请启用 WSLg，或在原生 Linux 桌面环境运行客户端。
 
 ## 常见问题
+
+### IntelliSense 提示找不到 `sw/redis++/redis++.h`
+
+先检查 redis-plus-plus 子模块是否已经初始化：
+
+```bash
+git submodule status -- \
+    client/lib/SQL++/lib/redis-plus-plus \
+    server/lib/SQL++/lib/redis-plus-plus
+```
+
+如果输出行以 `-` 开头，表示主仓库记录了子模块版本，但这部分可选源码尚未下载。当前程序没有把 Redis++ 加入实际构建，所以程序仍能正常编译和运行；只有打开 Redis 封装源码时，IntelliSense 无法解析对应头文件。回到第 1 步执行列出的 `git submodule update` 命令即可补全源码。若文件已经存在、但编辑器仍保留旧红线，在 VS Code 命令面板执行 `C/C++: Reset IntelliSense Database`。
 
 ### `apt` 找不到更高版本的 CMake
 

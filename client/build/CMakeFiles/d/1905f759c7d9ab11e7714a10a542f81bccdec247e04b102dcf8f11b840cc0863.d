@@ -1,13 +1,13 @@
 src/GUI/GUI_autogen/timestamp: \
   src/GUI/GUI_autogen/moc_predefs.h \
-  /home/curiosity/mssa/WebChat_self/client/include/def.h \
-  /home/curiosity/mssa/WebChat_self/client/include/json.hpp \
-  /home/curiosity/mssa/WebChat_self/client/src/GUI/CMakeLists.txt \
-  /home/curiosity/mssa/WebChat_self/client/src/GUI/mainWidget.cpp \
-  /home/curiosity/mssa/WebChat_self/client/src/GUI/mainWidget.h \
-  /home/curiosity/mssa/WebChat_self/client/src/GUI/serverWidget.cpp \
-  /home/curiosity/mssa/WebChat_self/client/src/GUI/serverWidget.h \
-  /home/curiosity/mssa/WebChat_self/client/src/Web/client.h \
+  /home/curiosity/mssa/web_chat_test/client/include/def.h \
+  /home/curiosity/mssa/web_chat_test/client/include/json.hpp \
+  /home/curiosity/mssa/web_chat_test/client/src/GUI/CMakeLists.txt \
+  /home/curiosity/mssa/web_chat_test/client/src/GUI/mainWidget.cpp \
+  /home/curiosity/mssa/web_chat_test/client/src/GUI/mainWidget.h \
+  /home/curiosity/mssa/web_chat_test/client/src/GUI/serverWidget.cpp \
+  /home/curiosity/mssa/web_chat_test/client/src/GUI/serverWidget.h \
+  /home/curiosity/mssa/web_chat_test/client/src/Web/client.h \
   /usr/bin/cmake \
   /usr/include/alloca.h \
   /usr/include/arpa/inet.h \

@@ -1,4 +1,5 @@
 {
+
   "configurations": [
     {
       "name": "WSL",
@@ -6,11 +7,10 @@
       "intelliSenseMode": "linux-gcc-x64",
       "cStandard": "c17",
       "cppStandard": "c++20",
-      "includePath": [
-        "${workspaceFolder}/**"
-      ],
-      "defines": []
+
+      "compileCommands": "${workspaceFolder}/client/build/compile_commands.json"
     }
   ],
   "version": 4
+
 }
