@@ -38,7 +38,9 @@ void chatClient::doRead() {
                 std::getline(is, line);
                 try {
                     const auto readMsg = nlohmann::json::parse(line);
-                    requestedDeque.push_back(readMsg);
+                    // 完整 JSON 解析完成后再短暂持锁，避免阻塞 Qt 线程。
+                    std::lock_guard<std::mutex> lock(requested_mutex);
+                    requested_messages.push_back(readMsg);
                 } catch (std::exception &error) {
                     std::cerr << error.what() << std::endl;
                 }
@@ -68,23 +70,23 @@ void chatClient::doWrite() {
             }
         });
 }
-
-void chatClient::write(msg &Msg) {
+//curio:根据message的类型来构造json对象，并将其投递到事件循环线程
+void chatClient::write(message &outgoing_message) {
     nlohmann::json sendJson;
-    switch (Msg.msgType) {
-        case msgType::text: {
+    switch (outgoing_message.type) {
+        case message_type::text: {
             sendJson["type"] = "text";
-            sendJson["data"] = nlohmann::json::parse(Msg.data);
+            sendJson["data"] = nlohmann::json::parse(outgoing_message.data);
             break;
         }
-        case msgType::loginRequested: {
+        case message_type::login_requested: {
             sendJson["type"] = "loginRequested";
-            sendJson["data"] = nlohmann::json::parse(Msg.data);
+            sendJson["data"] = nlohmann::json::parse(outgoing_message.data);
             break;
         }
-        case msgType::createUserRequested: {
+        case message_type::create_user_requested: {
             sendJson["type"] = "createUserRequested";
-            sendJson["data"] = nlohmann::json::parse(Msg.data);
+            sendJson["data"] = nlohmann::json::parse(outgoing_message.data);
             break;
         }
     }
@@ -102,4 +104,17 @@ void chatClient::close() {
     boost::asio::post(io_, [this]() {
         clientSocket.close();
     });
+}
+
+bool chatClient::try_pop_message(nlohmann::json &incoming_message)
+{
+    std::lock_guard<std::mutex> lock(requested_mutex);
+    if (requested_messages.empty())
+    {
+        return false;
+    }
+
+    incoming_message = std::move(requested_messages.front());
+    requested_messages.pop_front();
+    return true;
 }

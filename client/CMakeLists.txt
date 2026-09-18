@@ -1,11 +1,14 @@
-cmake_minimum_required(VERSION 4.2.3)
+# 项目没有使用 CMake 4.x 特性；3.28 与 Ubuntu 24.04 系统包一致，避免虚假的版本阻塞。
+cmake_minimum_required(VERSION 3.28)
 project(client)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
+# 仓库没有完整携带 Boost 子模块，直接使用系统安装的头文件包。
 include(FetchContent)
+find_package(Boost REQUIRED)
 
 #使用utf-8
 if(MSVC)
@@ -29,7 +32,7 @@ find_package(Qt6
         Core
         Gui
         Widgets
-        Multimedia
+        # 当前界面没有音频功能，不应强制要求 Qt Multimedia。
         REQUIRED
 )
 
@@ -60,16 +63,18 @@ add_subdirectory(src)
 
 add_executable(
         ${PROJECT_NAME}
-        main.cpp
+        # 程序入口已经归入 src；显式写出新路径，避免干净配置时仍查找旧位置。
+        src/main.cpp
 )
 
-#自动生成qt动态链接库
-set(WINDEPLOYQT_EXE "${CMAKE_PREFIX_PATH}/bin/windeployqt")
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND "${WINDEPLOYQT_EXE}" "$<TARGET_FILE:${PROJECT_NAME}>"
-        WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
-        COMMENT "Deploy Qt runtime dependencies"
-)
+# Windows 下自动复制 Qt 运行库；Linux 直接使用系统安装的 Qt。
+if(WIN32)
+        find_program(WINDEPLOYQT_EXE windeployqt HINTS "${CMAKE_PREFIX_PATH}/bin" REQUIRED)
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND "${WINDEPLOYQT_EXE}" "$<TARGET_FILE:${PROJECT_NAME}>"
+                COMMENT "Deploy Qt runtime dependencies"
+        )
+endif()
 
 target_include_directories(
         ${PROJECT_NAME}
@@ -82,10 +87,8 @@ target_include_directories(
 target_link_libraries(
         ${PROJECT_NAME}
         PUBLIC
-        Boost::asio
+        Boost::headers
         Web
         GUI
         
 )
-
-

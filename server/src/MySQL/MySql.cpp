@@ -1,5 +1,6 @@
 #include "MySql.h"
 #include <iostream>
+#include <memory>
 #include <vector>
 
 //登录
@@ -29,10 +30,11 @@ void login(
     } else {
         back["data"] = "failed";
     }
-    auto sendMsg = back.dump() + '\n';
+    // async_write 完成前缓冲区必须存活，由回调共同持有响应字符串。
+    auto send_msg = std::make_shared<std::string>(back.dump() + '\n');
     boost::asio::async_write(
-        sessionSocker, boost::asio::buffer(sendMsg),
-        [](const boost::system::error_code &, size_t) {
+        sessionSocker, boost::asio::buffer(*send_msg),
+        [send_msg](const boost::system::error_code &, size_t) {
         });
 }
 
@@ -41,35 +43,45 @@ void createUser(
     astra_sql::MySQLpp &mysqlAPI,
     const std::string &loginUserName,
     const std::string &password,
-    tcp::socket &sessionSocker) {
-    if (loginUserName.empty() || password.empty()) {
-        std::cout << "createUser failed: empty userName or password" << std::endl;
-        return;
-    }
-
-    const astra_sql::item userData{
-        {"userName", loginUserName},
-        {"password", password}
-    };
-    const astra_sql::mysqlItemType userType{
-        astra_sql::mysqlDataType::String,
-        astra_sql::mysqlDataType::String,
-    };
-    const auto result = mysqlAPI.addItem("users", userData, userType);
-
-    const bool ok = result == astra_sql::SQLppError::success;
+    tcp::socket &sessionSocker)
+{
     nlohmann::json back;
     back["type"] = "mysqlCreateUserFeedBack";
-    if (ok) {
+
+    bool ok = false;
+    if (loginUserName.empty() || password.empty())
+    {
+        // 协议请求必须有且仅有一次响应；校验失败也不能直接返回让客户端一直等待。
+        std::cout << "createUser failed: empty userName or password" << std::endl;
+    }
+    else
+    {
+        const astra_sql::item userData{
+            {"userName", loginUserName},
+            {"password", password}
+        };
+        const astra_sql::mysqlItemType userType{
+            astra_sql::mysqlDataType::String,
+            astra_sql::mysqlDataType::String,
+        };
+        const auto result = mysqlAPI.addItem("users", userData, userType);
+        ok = result == astra_sql::SQLppError::success;
+    }
+
+    if (ok)
+    {
         back["data"] = "success";
-    } else {
+    }
+    else
+    {
         back["data"] = "failed";
     }
 
-    auto sendMsg = back.dump() + '\n';
+    // 局部字符串会提前析构，因此把异步发送缓冲区的生命周期绑定到完成回调。
+    auto send_msg = std::make_shared<std::string>(back.dump() + '\n');
 
     boost::asio::async_write(
-        sessionSocker, boost::asio::buffer(sendMsg),
-        [](const boost::system::error_code &, size_t) {
+        sessionSocker, boost::asio::buffer(*send_msg),
+        [send_msg](const boost::system::error_code &, size_t) {
         });
 }

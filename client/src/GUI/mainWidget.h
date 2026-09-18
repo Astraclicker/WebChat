@@ -4,6 +4,7 @@
 #include <QPropertyAnimation>
 #include <QApplication>
 #include <QPlainTextEdit>
+#include <QTimer>
 #include "../Web/client.h"
 
 
@@ -11,31 +12,38 @@ class mainWidget : public QWidget {
     Q_OBJECT
 
 protected:
+    enum class pending_request_type
+    {
+        none,
+        login,
+        create_user
+    };
+
     //屏幕长宽
     int screenW;
     int screenH;
 
-    //投入qt循环函数
-    bool step(chatClient &webAPI, QWidget *parent);
+    // Qt 定时器只做一次非阻塞取队列，不在 GUI 线程中忙等网络响应。
+    void process_received_messages(chatClient &web_api);
+    QTimer *message_poll_timer;
+    QTimer *request_timeout_timer;
+    pending_request_type pending_request = pending_request_type::none;
 
     //多行文本输入框
-    QPlainTextEdit *textEdit;
+    QPlainTextEdit *message_input;
 
     //发送按钮
-    QPushButton *btnSend;
+    QPushButton *button_send;
 
 public:
     mainWidget(
         QWidget *parent,
         const std::string &title,
-        chatClient &webAPI
+        chatClient &web_api
     );
 
     //子窗口
     loginWidget *_loginWidget;
     createUserWidget *_createUserWidget;
 
-    static bool checkReturn(chatClient &webAPI, QWidget *parent);
-
-    static bool checkReturnLoop(chatClient &webAPI, QWidget *parent);
 };

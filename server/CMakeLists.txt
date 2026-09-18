@@ -1,8 +1,10 @@
-cmake_minimum_required(VERSION 4.2)
+# 项目没有使用 CMake 4.x 特性；使用发行版自带的 3.28 即可构建。
+cmake_minimum_required(VERSION 3.28)
 project(server)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-include(FetchContent)
+# 缺失的仓库子模块不能作为依赖来源，统一查找系统 Boost。
+find_package(Boost REQUIRED)
 
 #使用utf-8
 if (MSVC)
@@ -11,15 +13,6 @@ else ()
     add_compile_options(-finput-charset=UTF-8 -fexec-charset=UTF-8)
 endif ()
 
-#设置路径宏
-FetchContent_Declare(
-        boost
-        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/boost
-)
-FetchContent_Declare(
-        SQL++
-        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/SQL++
-)
 set(INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
 set(SQL++_DIR ${CMAKE_SOURCE_DIR}/lib/SQL++)
 
