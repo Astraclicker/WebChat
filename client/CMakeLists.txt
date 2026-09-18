@@ -47,7 +47,8 @@ add_subdirectory(src)
 
 add_executable(
         ${PROJECT_NAME}
-        main.cpp
+        # 程序入口已经归入 src；显式写出新路径，避免干净配置时仍查找旧位置。
+        src/main.cpp
 )
 
 # Windows 下自动复制 Qt 运行库；Linux 直接使用系统安装的 Qt。
