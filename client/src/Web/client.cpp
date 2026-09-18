@@ -68,7 +68,7 @@ void chatClient::doWrite() {
             }
         });
 }
-
+//curio:根据message的类型来构造json对象，并将其投递到事件循环线程
 void chatClient::write(message &outgoing_message) {
     nlohmann::json sendJson;
     switch (outgoing_message.type) {

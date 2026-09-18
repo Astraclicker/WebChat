@@ -12,7 +12,7 @@
 
 # =============================================================================
 # Project: client
-# Configurations: Debug
+# Configurations: Release
 # =============================================================================
 
 #############################################
@@ -24,7 +24,7 @@ ninja_required_version = 1.5
 #############################################
 # Set configuration variable for custom commands.
 
-CONFIGURATION = Debug
+CONFIGURATION = Release
 # =============================================================================
 # Include auxiliary files.
 
@@ -49,18 +49,18 @@ cmake_ninja_workdir = /home/curiosity/mssa/web_chat_test/client/build/
 
 build cmake_object_order_depends_target_client: phony || client_autogen client_autogen/mocs_compilation.cpp client_autogen/timestamp client_autogen_timestamp_deps cmake_object_order_depends_target_GUI cmake_object_order_depends_target_Web
 
-build CMakeFiles/client.dir/client_autogen/mocs_compilation.cpp.o: CXX_COMPILER__client_unscanned_Debug /home/curiosity/mssa/web_chat_test/client/build/client_autogen/mocs_compilation.cpp || cmake_object_order_depends_target_client
-  DEFINES = -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB
+build CMakeFiles/client.dir/client_autogen/mocs_compilation.cpp.o: CXX_COMPILER__client_unscanned_Release /home/curiosity/mssa/web_chat_test/client/build/client_autogen/mocs_compilation.cpp || cmake_object_order_depends_target_client
+  DEFINES = -DQT_CORE_LIB -DQT_GUI_LIB -DQT_NO_DEBUG -DQT_WIDGETS_LIB
   DEP_FILE = CMakeFiles/client.dir/client_autogen/mocs_compilation.cpp.o.d
-  FLAGS = -g -std=gnu++20 -finput-charset=UTF-8 -fexec-charset=UTF-8 -fPIC
+  FLAGS = -O3 -DNDEBUG -std=gnu++20 -finput-charset=UTF-8 -fexec-charset=UTF-8 -fPIC
   INCLUDES = -I/home/curiosity/mssa/web_chat_test/client/src -I/home/curiosity/mssa/web_chat_test/client/include -isystem /home/curiosity/mssa/web_chat_test/client/build/client_autogen/include -isystem /usr/include/x86_64-linux-gnu/qt6/QtCore -isystem /usr/include/x86_64-linux-gnu/qt6 -isystem /usr/lib/x86_64-linux-gnu/qt6/mkspecs/linux-g++ -isystem /usr/include/x86_64-linux-gnu/qt6/QtGui -isystem /usr/include/x86_64-linux-gnu/qt6/QtWidgets
   OBJECT_DIR = CMakeFiles/client.dir
   OBJECT_FILE_DIR = CMakeFiles/client.dir/client_autogen
 
-build CMakeFiles/client.dir/src/main.cpp.o: CXX_COMPILER__client_unscanned_Debug /home/curiosity/mssa/web_chat_test/client/src/main.cpp || cmake_object_order_depends_target_client
-  DEFINES = -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB
+build CMakeFiles/client.dir/src/main.cpp.o: CXX_COMPILER__client_unscanned_Release /home/curiosity/mssa/web_chat_test/client/src/main.cpp || cmake_object_order_depends_target_client
+  DEFINES = -DQT_CORE_LIB -DQT_GUI_LIB -DQT_NO_DEBUG -DQT_WIDGETS_LIB
   DEP_FILE = CMakeFiles/client.dir/src/main.cpp.o.d
-  FLAGS = -g -std=gnu++20 -finput-charset=UTF-8 -fexec-charset=UTF-8 -fPIC
+  FLAGS = -O3 -DNDEBUG -std=gnu++20 -finput-charset=UTF-8 -fexec-charset=UTF-8 -fPIC
   INCLUDES = -I/home/curiosity/mssa/web_chat_test/client/src -I/home/curiosity/mssa/web_chat_test/client/include -isystem /home/curiosity/mssa/web_chat_test/client/build/client_autogen/include -isystem /usr/include/x86_64-linux-gnu/qt6/QtCore -isystem /usr/include/x86_64-linux-gnu/qt6 -isystem /usr/lib/x86_64-linux-gnu/qt6/mkspecs/linux-g++ -isystem /usr/include/x86_64-linux-gnu/qt6/QtGui -isystem /usr/include/x86_64-linux-gnu/qt6/QtWidgets
   OBJECT_DIR = CMakeFiles/client.dir
   OBJECT_FILE_DIR = CMakeFiles/client.dir/src
@@ -71,15 +71,15 @@ build CMakeFiles/client.dir/src/main.cpp.o: CXX_COMPILER__client_unscanned_Debug
 
 
 #############################################
-# Link the executable /home/curiosity/mssa/web_chat_test/client/bin/Debug/client
+# Link the executable /home/curiosity/mssa/web_chat_test/client/bin/Release/client
 
-build /home/curiosity/mssa/web_chat_test/client/bin/Debug/client: CXX_EXECUTABLE_LINKER__client_Debug CMakeFiles/client.dir/client_autogen/mocs_compilation.cpp.o CMakeFiles/client.dir/src/main.cpp.o | src/GUI/libGUI.so src/Web/libWeb.so /usr/lib/x86_64-linux-gnu/libQt6Widgets.so.6.4.2 /usr/lib/x86_64-linux-gnu/libQt6Gui.so.6.4.2 /usr/lib/x86_64-linux-gnu/libQt6Core.so.6.4.2 /usr/lib/x86_64-linux-gnu/libGLX.so /usr/lib/x86_64-linux-gnu/libOpenGL.so || client_autogen client_autogen_timestamp_deps src/GUI/libGUI.so src/Web/libWeb.so
-  FLAGS = -g
+build /home/curiosity/mssa/web_chat_test/client/bin/Release/client: CXX_EXECUTABLE_LINKER__client_Release CMakeFiles/client.dir/client_autogen/mocs_compilation.cpp.o CMakeFiles/client.dir/src/main.cpp.o | src/GUI/libGUI.so src/Web/libWeb.so /usr/lib/x86_64-linux-gnu/libQt6Widgets.so.6.4.2 /usr/lib/x86_64-linux-gnu/libQt6Gui.so.6.4.2 /usr/lib/x86_64-linux-gnu/libQt6Core.so.6.4.2 /usr/lib/x86_64-linux-gnu/libGLX.so /usr/lib/x86_64-linux-gnu/libOpenGL.so || client_autogen client_autogen_timestamp_deps src/GUI/libGUI.so src/Web/libWeb.so
+  FLAGS = -O3 -DNDEBUG
   LINK_LIBRARIES = -Wl,-rpath,/home/curiosity/mssa/web_chat_test/client/build/src/GUI:/home/curiosity/mssa/web_chat_test/client/build/src/Web  src/GUI/libGUI.so  src/Web/libWeb.so  /usr/lib/x86_64-linux-gnu/libQt6Widgets.so.6.4.2  /usr/lib/x86_64-linux-gnu/libQt6Gui.so.6.4.2  /usr/lib/x86_64-linux-gnu/libQt6Core.so.6.4.2  /usr/lib/x86_64-linux-gnu/libGLX.so  /usr/lib/x86_64-linux-gnu/libOpenGL.so
   OBJECT_DIR = CMakeFiles/client.dir
   POST_BUILD = :
   PRE_LINK = :
-  TARGET_FILE = /home/curiosity/mssa/web_chat_test/client/bin/Debug/client
+  TARGET_FILE = /home/curiosity/mssa/web_chat_test/client/bin/Release/client
   TARGET_PDB = client.dbg
 
 
@@ -122,7 +122,7 @@ build client_autogen: phony CMakeFiles/client_autogen client_autogen/timestamp c
 # Custom command for client_autogen/timestamp
 
 build client_autogen/timestamp client_autogen/mocs_compilation.cpp | ${cmake_ninja_workdir}client_autogen/timestamp ${cmake_ninja_workdir}client_autogen/mocs_compilation.cpp: CUSTOM_COMMAND /usr/lib/qt6/libexec/moc /usr/lib/qt6/libexec/uic || client_autogen_timestamp_deps src/GUI/GUI_autogen src/GUI/GUI_autogen_timestamp_deps src/GUI/libGUI.so src/Web/Web_autogen src/Web/Web_autogen_timestamp_deps src/Web/libWeb.so
-  COMMAND = cd /home/curiosity/mssa/web_chat_test/client/build && /usr/bin/cmake -E cmake_autogen /home/curiosity/mssa/web_chat_test/client/build/CMakeFiles/client_autogen.dir/AutogenInfo.json Debug && /usr/bin/cmake -E touch /home/curiosity/mssa/web_chat_test/client/build/client_autogen/timestamp && /usr/bin/cmake -E cmake_transform_depfile Ninja gccdepfile /home/curiosity/mssa/web_chat_test/client /home/curiosity/mssa/web_chat_test/client /home/curiosity/mssa/web_chat_test/client/build /home/curiosity/mssa/web_chat_test/client/build /home/curiosity/mssa/web_chat_test/client/build/client_autogen/deps /home/curiosity/mssa/web_chat_test/client/build/CMakeFiles/d/8044b7b0b69d28bd720a513446013e30934d4ee559ae3359433b77c218459e75.d
+  COMMAND = cd /home/curiosity/mssa/web_chat_test/client/build && /usr/bin/cmake -E cmake_autogen /home/curiosity/mssa/web_chat_test/client/build/CMakeFiles/client_autogen.dir/AutogenInfo.json Release && /usr/bin/cmake -E touch /home/curiosity/mssa/web_chat_test/client/build/client_autogen/timestamp && /usr/bin/cmake -E cmake_transform_depfile Ninja gccdepfile /home/curiosity/mssa/web_chat_test/client /home/curiosity/mssa/web_chat_test/client /home/curiosity/mssa/web_chat_test/client/build /home/curiosity/mssa/web_chat_test/client/build /home/curiosity/mssa/web_chat_test/client/build/client_autogen/deps /home/curiosity/mssa/web_chat_test/client/build/CMakeFiles/d/8044b7b0b69d28bd720a513446013e30934d4ee559ae3359433b77c218459e75.d
   DESC = Automatic MOC and UIC for target client
   depfile = /home/curiosity/mssa/web_chat_test/client/build/CMakeFiles/d/8044b7b0b69d28bd720a513446013e30934d4ee559ae3359433b77c218459e75.d
   restat = 1
@@ -181,26 +181,26 @@ build src/rebuild_cache: phony src/CMakeFiles/rebuild_cache.util
 
 build cmake_object_order_depends_target_GUI: phony || cmake_object_order_depends_target_Web src/GUI/GUI_autogen src/GUI/GUI_autogen/mocs_compilation.cpp src/GUI/GUI_autogen/timestamp src/GUI/GUI_autogen_timestamp_deps
 
-build src/GUI/CMakeFiles/GUI.dir/GUI_autogen/mocs_compilation.cpp.o: CXX_COMPILER__GUI_unscanned_Debug /home/curiosity/mssa/web_chat_test/client/build/src/GUI/GUI_autogen/mocs_compilation.cpp || cmake_object_order_depends_target_GUI
-  DEFINES = -DGUI_EXPORTS -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB
+build src/GUI/CMakeFiles/GUI.dir/GUI_autogen/mocs_compilation.cpp.o: CXX_COMPILER__GUI_unscanned_Release /home/curiosity/mssa/web_chat_test/client/build/src/GUI/GUI_autogen/mocs_compilation.cpp || cmake_object_order_depends_target_GUI
+  DEFINES = -DGUI_EXPORTS -DQT_CORE_LIB -DQT_GUI_LIB -DQT_NO_DEBUG -DQT_WIDGETS_LIB
   DEP_FILE = src/GUI/CMakeFiles/GUI.dir/GUI_autogen/mocs_compilation.cpp.o.d
-  FLAGS = -g -std=gnu++20 -fPIC -finput-charset=UTF-8 -fexec-charset=UTF-8 -fPIC
+  FLAGS = -O3 -DNDEBUG -std=gnu++20 -fPIC -finput-charset=UTF-8 -fexec-charset=UTF-8 -fPIC
   INCLUDES = -I/home/curiosity/mssa/web_chat_test/client/include -isystem /home/curiosity/mssa/web_chat_test/client/build/src/GUI/GUI_autogen/include -isystem /usr/include/x86_64-linux-gnu/qt6/QtCore -isystem /usr/include/x86_64-linux-gnu/qt6 -isystem /usr/lib/x86_64-linux-gnu/qt6/mkspecs/linux-g++ -isystem /usr/include/x86_64-linux-gnu/qt6/QtGui -isystem /usr/include/x86_64-linux-gnu/qt6/QtWidgets
   OBJECT_DIR = src/GUI/CMakeFiles/GUI.dir
   OBJECT_FILE_DIR = src/GUI/CMakeFiles/GUI.dir/GUI_autogen
 
-build src/GUI/CMakeFiles/GUI.dir/mainWidget.cpp.o: CXX_COMPILER__GUI_unscanned_Debug /home/curiosity/mssa/web_chat_test/client/src/GUI/mainWidget.cpp || cmake_object_order_depends_target_GUI
-  DEFINES = -DGUI_EXPORTS -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB
+build src/GUI/CMakeFiles/GUI.dir/mainWidget.cpp.o: CXX_COMPILER__GUI_unscanned_Release /home/curiosity/mssa/web_chat_test/client/src/GUI/mainWidget.cpp || cmake_object_order_depends_target_GUI
+  DEFINES = -DGUI_EXPORTS -DQT_CORE_LIB -DQT_GUI_LIB -DQT_NO_DEBUG -DQT_WIDGETS_LIB
   DEP_FILE = src/GUI/CMakeFiles/GUI.dir/mainWidget.cpp.o.d
-  FLAGS = -g -std=gnu++20 -fPIC -finput-charset=UTF-8 -fexec-charset=UTF-8 -fPIC
+  FLAGS = -O3 -DNDEBUG -std=gnu++20 -fPIC -finput-charset=UTF-8 -fexec-charset=UTF-8 -fPIC
   INCLUDES = -I/home/curiosity/mssa/web_chat_test/client/include -isystem /home/curiosity/mssa/web_chat_test/client/build/src/GUI/GUI_autogen/include -isystem /usr/include/x86_64-linux-gnu/qt6/QtCore -isystem /usr/include/x86_64-linux-gnu/qt6 -isystem /usr/lib/x86_64-linux-gnu/qt6/mkspecs/linux-g++ -isystem /usr/include/x86_64-linux-gnu/qt6/QtGui -isystem /usr/include/x86_64-linux-gnu/qt6/QtWidgets
   OBJECT_DIR = src/GUI/CMakeFiles/GUI.dir
   OBJECT_FILE_DIR = src/GUI/CMakeFiles/GUI.dir
 
-build src/GUI/CMakeFiles/GUI.dir/serverWidget.cpp.o: CXX_COMPILER__GUI_unscanned_Debug /home/curiosity/mssa/web_chat_test/client/src/GUI/serverWidget.cpp || cmake_object_order_depends_target_GUI
-  DEFINES = -DGUI_EXPORTS -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB
+build src/GUI/CMakeFiles/GUI.dir/serverWidget.cpp.o: CXX_COMPILER__GUI_unscanned_Release /home/curiosity/mssa/web_chat_test/client/src/GUI/serverWidget.cpp || cmake_object_order_depends_target_GUI
+  DEFINES = -DGUI_EXPORTS -DQT_CORE_LIB -DQT_GUI_LIB -DQT_NO_DEBUG -DQT_WIDGETS_LIB
   DEP_FILE = src/GUI/CMakeFiles/GUI.dir/serverWidget.cpp.o.d
-  FLAGS = -g -std=gnu++20 -fPIC -finput-charset=UTF-8 -fexec-charset=UTF-8 -fPIC
+  FLAGS = -O3 -DNDEBUG -std=gnu++20 -fPIC -finput-charset=UTF-8 -fexec-charset=UTF-8 -fPIC
   INCLUDES = -I/home/curiosity/mssa/web_chat_test/client/include -isystem /home/curiosity/mssa/web_chat_test/client/build/src/GUI/GUI_autogen/include -isystem /usr/include/x86_64-linux-gnu/qt6/QtCore -isystem /usr/include/x86_64-linux-gnu/qt6 -isystem /usr/lib/x86_64-linux-gnu/qt6/mkspecs/linux-g++ -isystem /usr/include/x86_64-linux-gnu/qt6/QtGui -isystem /usr/include/x86_64-linux-gnu/qt6/QtWidgets
   OBJECT_DIR = src/GUI/CMakeFiles/GUI.dir
   OBJECT_FILE_DIR = src/GUI/CMakeFiles/GUI.dir
@@ -213,8 +213,8 @@ build src/GUI/CMakeFiles/GUI.dir/serverWidget.cpp.o: CXX_COMPILER__GUI_unscanned
 #############################################
 # Link the shared library src/GUI/libGUI.so
 
-build src/GUI/libGUI.so: CXX_SHARED_LIBRARY_LINKER__GUI_Debug src/GUI/CMakeFiles/GUI.dir/GUI_autogen/mocs_compilation.cpp.o src/GUI/CMakeFiles/GUI.dir/mainWidget.cpp.o src/GUI/CMakeFiles/GUI.dir/serverWidget.cpp.o | src/Web/libWeb.so /usr/lib/x86_64-linux-gnu/libQt6Widgets.so.6.4.2 /usr/lib/x86_64-linux-gnu/libQt6Gui.so.6.4.2 /usr/lib/x86_64-linux-gnu/libQt6Core.so.6.4.2 /usr/lib/x86_64-linux-gnu/libGLX.so /usr/lib/x86_64-linux-gnu/libOpenGL.so || src/GUI/GUI_autogen src/GUI/GUI_autogen_timestamp_deps src/Web/libWeb.so
-  LANGUAGE_COMPILE_FLAGS = -g
+build src/GUI/libGUI.so: CXX_SHARED_LIBRARY_LINKER__GUI_Release src/GUI/CMakeFiles/GUI.dir/GUI_autogen/mocs_compilation.cpp.o src/GUI/CMakeFiles/GUI.dir/mainWidget.cpp.o src/GUI/CMakeFiles/GUI.dir/serverWidget.cpp.o | src/Web/libWeb.so /usr/lib/x86_64-linux-gnu/libQt6Widgets.so.6.4.2 /usr/lib/x86_64-linux-gnu/libQt6Gui.so.6.4.2 /usr/lib/x86_64-linux-gnu/libQt6Core.so.6.4.2 /usr/lib/x86_64-linux-gnu/libGLX.so /usr/lib/x86_64-linux-gnu/libOpenGL.so || src/GUI/GUI_autogen src/GUI/GUI_autogen_timestamp_deps src/Web/libWeb.so
+  LANGUAGE_COMPILE_FLAGS = -O3 -DNDEBUG
   LINK_LIBRARIES = -Wl,-rpath,/home/curiosity/mssa/web_chat_test/client/build/src/Web  src/Web/libWeb.so  /usr/lib/x86_64-linux-gnu/libQt6Widgets.so.6.4.2  /usr/lib/x86_64-linux-gnu/libQt6Gui.so.6.4.2  /usr/lib/x86_64-linux-gnu/libQt6Core.so.6.4.2  /usr/lib/x86_64-linux-gnu/libGLX.so  /usr/lib/x86_64-linux-gnu/libOpenGL.so
   OBJECT_DIR = src/GUI/CMakeFiles/GUI.dir
   POST_BUILD = :
@@ -264,7 +264,7 @@ build src/GUI/GUI_autogen: phony src/GUI/CMakeFiles/GUI_autogen src/GUI/GUI_auto
 # Custom command for src/GUI/GUI_autogen/timestamp
 
 build src/GUI/GUI_autogen/timestamp src/GUI/GUI_autogen/mocs_compilation.cpp | ${cmake_ninja_workdir}src/GUI/GUI_autogen/timestamp ${cmake_ninja_workdir}src/GUI/GUI_autogen/mocs_compilation.cpp: CUSTOM_COMMAND /usr/lib/qt6/libexec/moc /usr/lib/qt6/libexec/uic || src/GUI/GUI_autogen_timestamp_deps src/Web/Web_autogen src/Web/Web_autogen_timestamp_deps src/Web/libWeb.so
-  COMMAND = cd /home/curiosity/mssa/web_chat_test/client/build/src/GUI && /usr/bin/cmake -E cmake_autogen /home/curiosity/mssa/web_chat_test/client/build/src/GUI/CMakeFiles/GUI_autogen.dir/AutogenInfo.json Debug && /usr/bin/cmake -E touch /home/curiosity/mssa/web_chat_test/client/build/src/GUI/GUI_autogen/timestamp && /usr/bin/cmake -E cmake_transform_depfile Ninja gccdepfile /home/curiosity/mssa/web_chat_test/client /home/curiosity/mssa/web_chat_test/client/src/GUI /home/curiosity/mssa/web_chat_test/client/build /home/curiosity/mssa/web_chat_test/client/build/src/GUI /home/curiosity/mssa/web_chat_test/client/build/src/GUI/GUI_autogen/deps /home/curiosity/mssa/web_chat_test/client/build/CMakeFiles/d/1905f759c7d9ab11e7714a10a542f81bccdec247e04b102dcf8f11b840cc0863.d
+  COMMAND = cd /home/curiosity/mssa/web_chat_test/client/build/src/GUI && /usr/bin/cmake -E cmake_autogen /home/curiosity/mssa/web_chat_test/client/build/src/GUI/CMakeFiles/GUI_autogen.dir/AutogenInfo.json Release && /usr/bin/cmake -E touch /home/curiosity/mssa/web_chat_test/client/build/src/GUI/GUI_autogen/timestamp && /usr/bin/cmake -E cmake_transform_depfile Ninja gccdepfile /home/curiosity/mssa/web_chat_test/client /home/curiosity/mssa/web_chat_test/client/src/GUI /home/curiosity/mssa/web_chat_test/client/build /home/curiosity/mssa/web_chat_test/client/build/src/GUI /home/curiosity/mssa/web_chat_test/client/build/src/GUI/GUI_autogen/deps /home/curiosity/mssa/web_chat_test/client/build/CMakeFiles/d/1905f759c7d9ab11e7714a10a542f81bccdec247e04b102dcf8f11b840cc0863.d
   DESC = Automatic MOC and UIC for target GUI
   depfile = /home/curiosity/mssa/web_chat_test/client/build/CMakeFiles/d/1905f759c7d9ab11e7714a10a542f81bccdec247e04b102dcf8f11b840cc0863.d
   restat = 1
@@ -295,18 +295,18 @@ build src/GUI/CMakeFiles/GUI_autogen | ${cmake_ninja_workdir}src/GUI/CMakeFiles/
 
 build cmake_object_order_depends_target_Web: phony || src/Web/Web_autogen src/Web/Web_autogen/mocs_compilation.cpp src/Web/Web_autogen/timestamp src/Web/Web_autogen_timestamp_deps
 
-build src/Web/CMakeFiles/Web.dir/Web_autogen/mocs_compilation.cpp.o: CXX_COMPILER__Web_unscanned_Debug /home/curiosity/mssa/web_chat_test/client/build/src/Web/Web_autogen/mocs_compilation.cpp || cmake_object_order_depends_target_Web
+build src/Web/CMakeFiles/Web.dir/Web_autogen/mocs_compilation.cpp.o: CXX_COMPILER__Web_unscanned_Release /home/curiosity/mssa/web_chat_test/client/build/src/Web/Web_autogen/mocs_compilation.cpp || cmake_object_order_depends_target_Web
   DEFINES = -DWeb_EXPORTS
   DEP_FILE = src/Web/CMakeFiles/Web.dir/Web_autogen/mocs_compilation.cpp.o.d
-  FLAGS = -g -std=gnu++20 -fPIC -finput-charset=UTF-8 -fexec-charset=UTF-8
+  FLAGS = -O3 -DNDEBUG -std=gnu++20 -fPIC -finput-charset=UTF-8 -fexec-charset=UTF-8
   INCLUDES = -I/home/curiosity/mssa/web_chat_test/client/include -isystem /home/curiosity/mssa/web_chat_test/client/build/src/Web/Web_autogen/include
   OBJECT_DIR = src/Web/CMakeFiles/Web.dir
   OBJECT_FILE_DIR = src/Web/CMakeFiles/Web.dir/Web_autogen
 
-build src/Web/CMakeFiles/Web.dir/client.cpp.o: CXX_COMPILER__Web_unscanned_Debug /home/curiosity/mssa/web_chat_test/client/src/Web/client.cpp || cmake_object_order_depends_target_Web
+build src/Web/CMakeFiles/Web.dir/client.cpp.o: CXX_COMPILER__Web_unscanned_Release /home/curiosity/mssa/web_chat_test/client/src/Web/client.cpp || cmake_object_order_depends_target_Web
   DEFINES = -DWeb_EXPORTS
   DEP_FILE = src/Web/CMakeFiles/Web.dir/client.cpp.o.d
-  FLAGS = -g -std=gnu++20 -fPIC -finput-charset=UTF-8 -fexec-charset=UTF-8
+  FLAGS = -O3 -DNDEBUG -std=gnu++20 -fPIC -finput-charset=UTF-8 -fexec-charset=UTF-8
   INCLUDES = -I/home/curiosity/mssa/web_chat_test/client/include -isystem /home/curiosity/mssa/web_chat_test/client/build/src/Web/Web_autogen/include
   OBJECT_DIR = src/Web/CMakeFiles/Web.dir
   OBJECT_FILE_DIR = src/Web/CMakeFiles/Web.dir
@@ -319,8 +319,8 @@ build src/Web/CMakeFiles/Web.dir/client.cpp.o: CXX_COMPILER__Web_unscanned_Debug
 #############################################
 # Link the shared library src/Web/libWeb.so
 
-build src/Web/libWeb.so: CXX_SHARED_LIBRARY_LINKER__Web_Debug src/Web/CMakeFiles/Web.dir/Web_autogen/mocs_compilation.cpp.o src/Web/CMakeFiles/Web.dir/client.cpp.o || src/Web/Web_autogen src/Web/Web_autogen_timestamp_deps
-  LANGUAGE_COMPILE_FLAGS = -g
+build src/Web/libWeb.so: CXX_SHARED_LIBRARY_LINKER__Web_Release src/Web/CMakeFiles/Web.dir/Web_autogen/mocs_compilation.cpp.o src/Web/CMakeFiles/Web.dir/client.cpp.o || src/Web/Web_autogen src/Web/Web_autogen_timestamp_deps
+  LANGUAGE_COMPILE_FLAGS = -O3 -DNDEBUG
   OBJECT_DIR = src/Web/CMakeFiles/Web.dir
   POST_BUILD = :
   PRE_LINK = :
@@ -369,7 +369,7 @@ build src/Web/Web_autogen: phony src/Web/CMakeFiles/Web_autogen src/Web/Web_auto
 # Custom command for src/Web/Web_autogen/timestamp
 
 build src/Web/Web_autogen/timestamp src/Web/Web_autogen/mocs_compilation.cpp | ${cmake_ninja_workdir}src/Web/Web_autogen/timestamp ${cmake_ninja_workdir}src/Web/Web_autogen/mocs_compilation.cpp: CUSTOM_COMMAND /usr/lib/qt6/libexec/moc /usr/lib/qt6/libexec/uic || src/Web/Web_autogen_timestamp_deps
-  COMMAND = cd /home/curiosity/mssa/web_chat_test/client/build/src/Web && /usr/bin/cmake -E cmake_autogen /home/curiosity/mssa/web_chat_test/client/build/src/Web/CMakeFiles/Web_autogen.dir/AutogenInfo.json Debug && /usr/bin/cmake -E touch /home/curiosity/mssa/web_chat_test/client/build/src/Web/Web_autogen/timestamp && /usr/bin/cmake -E cmake_transform_depfile Ninja gccdepfile /home/curiosity/mssa/web_chat_test/client /home/curiosity/mssa/web_chat_test/client/src/Web /home/curiosity/mssa/web_chat_test/client/build /home/curiosity/mssa/web_chat_test/client/build/src/Web /home/curiosity/mssa/web_chat_test/client/build/src/Web/Web_autogen/deps /home/curiosity/mssa/web_chat_test/client/build/CMakeFiles/d/c42d8f155b4455feea975bbad4a5c317183ee71aa67d47a48c93f3970d1ec6c8.d
+  COMMAND = cd /home/curiosity/mssa/web_chat_test/client/build/src/Web && /usr/bin/cmake -E cmake_autogen /home/curiosity/mssa/web_chat_test/client/build/src/Web/CMakeFiles/Web_autogen.dir/AutogenInfo.json Release && /usr/bin/cmake -E touch /home/curiosity/mssa/web_chat_test/client/build/src/Web/Web_autogen/timestamp && /usr/bin/cmake -E cmake_transform_depfile Ninja gccdepfile /home/curiosity/mssa/web_chat_test/client /home/curiosity/mssa/web_chat_test/client/src/Web /home/curiosity/mssa/web_chat_test/client/build /home/curiosity/mssa/web_chat_test/client/build/src/Web /home/curiosity/mssa/web_chat_test/client/build/src/Web/Web_autogen/deps /home/curiosity/mssa/web_chat_test/client/build/CMakeFiles/d/c42d8f155b4455feea975bbad4a5c317183ee71aa67d47a48c93f3970d1ec6c8.d
   DESC = Automatic MOC and UIC for target Web
   depfile = /home/curiosity/mssa/web_chat_test/client/build/CMakeFiles/d/c42d8f155b4455feea975bbad4a5c317183ee71aa67d47a48c93f3970d1ec6c8.d
   restat = 1
@@ -401,7 +401,7 @@ build Web_autogen: phony src/Web/Web_autogen
 
 build Web_autogen_timestamp_deps: phony src/Web/Web_autogen_timestamp_deps
 
-build client: phony /home/curiosity/mssa/web_chat_test/client/bin/Debug/client
+build client: phony /home/curiosity/mssa/web_chat_test/client/bin/Release/client
 
 build libGUI.so: phony src/GUI/libGUI.so
 
@@ -415,7 +415,7 @@ build libWeb.so: phony src/Web/libWeb.so
 #############################################
 # Folder: /home/curiosity/mssa/web_chat_test/client/build
 
-build all: phony /home/curiosity/mssa/web_chat_test/client/bin/Debug/client src/all
+build all: phony /home/curiosity/mssa/web_chat_test/client/bin/Release/client src/all
 
 # =============================================================================
 
@@ -459,7 +459,7 @@ build /home/curiosity/mssa/web_chat_test/client/CMakeLists.txt /home/curiosity/m
 # Clean additional files.
 
 build CMakeFiles/clean.additional: CLEAN_ADDITIONAL
-  CONFIG = Debug
+  CONFIG = Release
 
 
 #############################################

@@ -267,3 +267,19 @@ cmake --build client/build --parallel
 - 当前地址和聊天端口固定为 `127.0.0.1:9191`，只适合本机测试。
 - 当前登录密码按明文保存，仅用于理解客户端、异步网络和数据库调用链。
 - 本 README 的完整流程验证目标是 Ubuntu 24.04/WSL2；Windows 构建尚未纳入本轮验证。
+
+## 修复intellisense问题
+在根目录下执行以下命令,c_cpp_properties.json已经调整为以下产生的compile path
+```bash
+cmake -S client -B client/build \
+    -G Ninja \
+    -DCMAKE_BUILD_TYPE=Debug \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+```
+
+```bash
+cmake -S server -B server/build \
+    -G Ninja \
+    -DCMAKE_BUILD_TYPE=Debug \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+```
