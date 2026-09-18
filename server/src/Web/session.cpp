@@ -50,7 +50,9 @@ void session::broadCast(const std::string &msg, const std::string &receiver) con
     const std::string frame = out.dump() + "\n";
 
     for (auto &session: sessionSet) {
-        if (session.get() != this && session->myUserName == receiver) {
+        // 原设计排除了发送者：只有一个客户端时，即使给自己发消息也永远没有反馈。
+        // 学习版仍固定发送给 root，但把消息同时回显给发送者，形成最小可观察闭环。
+        if (session.get() == this || session->myUserName == receiver) {
             session->deliver(frame);
             std::cout << this->sessionSocker.remote_endpoint() << " send to ";
             std::cout << session->sessionSocker.remote_endpoint() << std::endl;

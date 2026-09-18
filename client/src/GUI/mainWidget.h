@@ -4,7 +4,6 @@
 #include <QPropertyAnimation>
 #include <QApplication>
 #include <QPlainTextEdit>
-#include <QLineEdit>
 #include <QTimer>
 #include "../Web/client.h"
 
@@ -30,12 +29,10 @@ protected:
     QTimer *request_timeout_timer;
     pending_request_type pending_request = pending_request_type::none;
 
-    // 聊天记录与消息输入必须分开，否则发送后窗口没有任何可观察结果。
-    QPlainTextEdit *message_history;
+    //多行文本输入框
     QPlainTextEdit *message_input;
 
-    // 服务端按用户名路由消息，客户端需要允许用户明确指定接收者。
-    QLineEdit *receiver_input;
+    //发送按钮
     QPushButton *button_send;
 
 public:

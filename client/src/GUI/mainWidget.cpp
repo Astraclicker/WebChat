@@ -1,9 +1,6 @@
 #include "mainWidget.h"
 #include <QScreen>
 #include "serverWidget.h"
-#include <QHBoxLayout>
-#include <QLabel>
-#include <QVBoxLayout>
 
 mainWidget::mainWidget(
     QWidget *parent,
@@ -15,29 +12,13 @@ mainWidget::mainWidget(
     this->setWindowTitle(title.c_str());
     this->setMinimumSize(800, 600);
 
-    // 聊天窗口必须同时呈现历史、接收者和输入区；原来的绝对定位会让输入框与按钮重叠。
-    auto *main_layout = new QVBoxLayout(this);
-    message_history = new QPlainTextEdit(this);
-    message_history->setReadOnly(true);
-    message_history->setPlaceholderText("聊天记录会显示在这里");
-
-    auto *receiver_layout = new QHBoxLayout();
-    auto *receiver_label = new QLabel("接收者：", this);
-    receiver_input = new QLineEdit(this);
-    receiver_input->setText("root");
-    receiver_input->setPlaceholderText("输入对方的用户名");
-    receiver_layout->addWidget(receiver_label);
-    receiver_layout->addWidget(receiver_input);
-
+    // 保留学习项目原有界面，只修复影响运行的消息链路，不扩展聊天产品功能。
     message_input = new QPlainTextEdit(this);
-    message_input->setPlaceholderText("输入消息");
-    message_input->setMaximumHeight(120);
-    button_send = new QPushButton("发送", this);
-
-    main_layout->addWidget(message_history, 1);
-    main_layout->addLayout(receiver_layout);
-    main_layout->addWidget(message_input);
-    main_layout->addWidget(button_send, 0, Qt::AlignRight);
+    button_send = new QPushButton(this);
+    button_send->setText("发送");
+    button_send->move(100, 100);
+    button_send->setFixedSize(200, 100);
+    button_send->show();
 
     // WSLg/Wayland 下，鼠标位置可能暂时不属于 Qt 已识别的任何屏幕。
     const QScreen *current_screen = QGuiApplication::screenAt(QCursor::pos());
@@ -78,24 +59,18 @@ mainWidget::mainWidget(
     connect(button_send, &QPushButton::clicked, this, [this, &web_api]()
     {
         nlohmann::json json_data;
-
-        const std::string receiver = receiver_input->text().trimmed().toStdString();
         const std::string text = message_input->toPlainText().trimmed().toStdString();
-        if (receiver.empty() || text.empty())
+        if (text.empty())
         {
-            messageBox::popup(this, "接收者和消息都不能为空", messageBox::Type::Error);
+            messageBox::popup(this, "消息不能为空", messageBox::Type::Error);
             return;
         }
 
-        json_data["receiver"] = receiver;
+        // 原设计缺少接收者选择，暂时保留发送给 root 的学习版协议，不在本轮扩展 UI。
+        json_data["receiver"] = "root";
         json_data["text"] = text;
         message outgoing_message{.data = json_data.dump(), .type = message_type::text};
         web_api.write(outgoing_message);
-
-        // 本地回显表示消息已进入客户端发送队列；对方收到后会看到服务端转发的记录。
-        message_history->appendPlainText(
-            QString::fromStdString("[我 -> " + receiver + "]: " + text)
-        );
         message_input->clear();
     });
 
@@ -170,8 +145,8 @@ void mainWidget::process_received_messages(chatClient &web_api)
             const std::string sender = data.value("sender", std::string{});
             const std::string text = data.value("text", std::string{});
 
-            // 收到的聊天内容应留在主窗口中，短暂的桌面提示不能充当聊天记录。
-            message_history->appendPlainText(QString::fromStdString("[" + sender + "]: " + text));
+            // 原项目没有聊天记录控件，先沿用提示框证明消息链路已闭环。
+            messageBox::popup(this, "[" + sender + "]: " + text, messageBox::Type::Info);
             continue;
         }
 
