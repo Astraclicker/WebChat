@@ -1,9 +1,6 @@
 #include "mainWidget.h"
 #include <QScreen>
-#include <iostream>
-#include <ctime>
 #include "serverWidget.h"
-#include <QTime>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QVBoxLayout>
@@ -11,8 +8,9 @@
 mainWidget::mainWidget(
     QWidget *parent,
     const std::string &title,
-    chatClient &webAPI
-) : QWidget(parent) {
+    chatClient &web_api
+) : QWidget(parent)
+{
     //mainWidget 窗口设置
     this->setWindowTitle(title.c_str());
     this->setMinimumSize(800, 600);
@@ -59,21 +57,27 @@ mainWidget::mainWidget(
     _createUserWidget = new createUserWidget(nullptr, screenW, screenH);
 
     //连接登录请求
-    connect(_loginWidget, &loginWidget::loginRequested, this, [&webAPI, this]() {
-        nlohmann::json jsonData;
-        jsonData["userName"] = _loginWidget->getUserName();
-        jsonData["password"] = _loginWidget->getPassword();
-        message outgoing_message{.data = jsonData.dump(), .type = message_type::login_requested};
-        webAPI.write(outgoing_message);
-        if (checkReturn(webAPI, this)) {
-            this->show();
-            _loginWidget->close();
+    connect(_loginWidget, &loginWidget::loginRequested, this, [&web_api, this]()
+    {
+        if (pending_request != pending_request_type::none)
+        {
+            messageBox::popup(_loginWidget, "正在等待上一个请求", messageBox::Type::Info);
+            return;
         }
+
+        nlohmann::json json_data;
+        json_data["userName"] = _loginWidget->getUserName();
+        json_data["password"] = _loginWidget->getPassword();
+        message outgoing_message{.data = json_data.dump(), .type = message_type::login_requested};
+        web_api.write(outgoing_message);
+        pending_request = pending_request_type::login;
+        request_timeout_timer->start(5000);
     });
 
     //连接发送消息请求
-    connect(button_send, &QPushButton::clicked, this, [this, &webAPI]() {
-        nlohmann::json jsonData;
+    connect(button_send, &QPushButton::clicked, this, [this, &web_api]()
+    {
+        nlohmann::json json_data;
 
         const std::string receiver = receiver_input->text().trimmed().toStdString();
         const std::string text = message_input->toPlainText().trimmed().toStdString();
@@ -83,10 +87,10 @@ mainWidget::mainWidget(
             return;
         }
 
-        jsonData["receiver"] = receiver;
-        jsonData["text"] = text;
-        message outgoing_message{.data = jsonData.dump(), .type = message_type::text};
-        webAPI.write(outgoing_message);
+        json_data["receiver"] = receiver;
+        json_data["text"] = text;
+        message outgoing_message{.data = json_data.dump(), .type = message_type::text};
+        web_api.write(outgoing_message);
 
         // 本地回显表示消息已进入客户端发送队列；对方收到后会看到服务端转发的记录。
         message_history->appendPlainText(
@@ -96,88 +100,115 @@ mainWidget::mainWidget(
     });
 
     //连接创建用户请求
-    connect(_loginWidget, &loginWidget::createUserRequested, this, [this]() {
+    connect(_loginWidget, &loginWidget::createUserRequested, this, [this]()
+    {
         _loginWidget->close();
         _createUserWidget->show();
     });
 
     //连接取消按请求
-    connect(_loginWidget, &loginWidget::cancelRequested, this, [this]() {
+    connect(_loginWidget, &loginWidget::cancelRequested, this, [this]()
+    {
         _loginWidget->close();
     });
 
     //连接确认创建用户请求
-    connect(_createUserWidget, &createUserWidget::createUserRequested, this, [&webAPI, this]() {
-        nlohmann::json jsonData;
-        jsonData["userName"] = _createUserWidget->getUserName();
-        jsonData["password"] = _createUserWidget->getPassword();
-        message outgoing_message{.data = jsonData.dump(), .type = message_type::create_user_requested};
-        webAPI.write(outgoing_message);
-        if (checkReturn(webAPI, _createUserWidget)) {
-            _createUserWidget->close();
-            _loginWidget->show();
+    connect(_createUserWidget, &createUserWidget::createUserRequested, this, [&web_api, this]()
+    {
+        if (pending_request != pending_request_type::none)
+        {
+            messageBox::popup(_createUserWidget, "正在等待上一个请求", messageBox::Type::Info);
+            return;
         }
+
+        nlohmann::json json_data;
+        json_data["userName"] = _createUserWidget->getUserName();
+        json_data["password"] = _createUserWidget->getPassword();
+        message outgoing_message{.data = json_data.dump(), .type = message_type::create_user_requested};
+        web_api.write(outgoing_message);
+        pending_request = pending_request_type::create_user;
+        request_timeout_timer->start(5000);
     });
 
     //连接取消创建用户请求
-    connect(_createUserWidget, &createUserWidget::cancelRequested, this, [this]() {
+    connect(_createUserWidget, &createUserWidget::cancelRequested, this, [this]()
+    {
         _createUserWidget->close();
         _loginWidget->show();
     });
 
     _loginWidget->show();
-    step(webAPI, this);
+    request_timeout_timer = new QTimer(this);
+    request_timeout_timer->setSingleShot(true);
+    connect(request_timeout_timer, &QTimer::timeout, this, [this]()
+    {
+        QWidget *request_window = pending_request == pending_request_type::create_user
+                                      ? static_cast<QWidget *>(_createUserWidget)
+                                      : static_cast<QWidget *>(_loginWidget);
+        pending_request = pending_request_type::none;
+        messageBox::popup(request_window, "请求超时", messageBox::Type::Error);
+    });
+
+    // 20 ms 轮询不会阻塞 GUI，也避免原先 0 ms 自递归持续占用一个 CPU 核心。
+    message_poll_timer = new QTimer(this);
+    connect(message_poll_timer, &QTimer::timeout, this, [&web_api, this]()
+    {
+        process_received_messages(web_api);
+    });
+    message_poll_timer->start(20);
 }
 
-bool mainWidget::step(chatClient &webAPI, QWidget *parent) {
-    const bool feedback = checkReturnLoop(webAPI, parent);
-    QTimer::singleShot(0, this, [&]() { step(webAPI, parent); });
-    return feedback;
-}
+void mainWidget::process_received_messages(chatClient &web_api)
+{
+    nlohmann::json read_message;
+    while (web_api.try_pop_message(read_message))
+    {
+        const std::string type = read_message.value("type", std::string{});
+        if (type == "text")
+        {
+            const auto data = read_message.value("data", nlohmann::json::object());
+            const std::string sender = data.value("sender", std::string{});
+            const std::string text = data.value("text", std::string{});
 
-// 作为槽函数，服务于登录，注册请求
-bool mainWidget::checkReturn(chatClient &webAPI, QWidget *parent) {
-    const clock_t start = clock();
-    clock_t end = clock();
-    while ((end - start) / CLOCKS_PER_SEC < 5) {
-        if (!webAPI.requestedDeque.empty()) {
-            const auto readMsg = webAPI.requestedDeque.front();
-
-            const auto type = readMsg.value("type", std::string{});
-            const auto data = readMsg.value("data", std::string{});;
-            if (type == "mysqlLoginFeedBack") {
-                messageBox::popup(nullptr, data == "success" ? "登录成功" : "登录失败",
-                                  data == "success" ? messageBox::Type::Success : messageBox::Type::Error);
-            }
-            if (type == "mysqlCreateUserFeedBack") {
-                messageBox::popup(nullptr, data == "success" ? "注册成功" : "注册失败:用户名已存在",
-                                  data == "success" ? messageBox::Type::Success : messageBox::Type::Error);
-            }
-            webAPI.requestedDeque.pop_front();
-            return data == "success";
-        }
-        end = clock();
-    }
-    new messageBox(parent, "请求超时", messageBox::Type::Error);
-    return false;
-}
-
-// 投递在qt循环中，用于处理接收消息
-bool mainWidget::checkReturnLoop(chatClient &webAPI, QWidget *parent) {
-    if (!webAPI.requestedDeque.empty()) {
-        const auto readMsg = webAPI.requestedDeque.front();
-
-        const auto type = readMsg.value("type", std::string{});
-        const auto data = readMsg.value("data", nlohmann::json::object());
-        const auto sender = data.value("sender", std::string{});
-        const auto text = data.value("text", std::string{});
-
-        if (type == "text") {
             // 收到的聊天内容应留在主窗口中，短暂的桌面提示不能充当聊天记录。
             message_history->appendPlainText(QString::fromStdString("[" + sender + "]: " + text));
-            webAPI.requestedDeque.pop_front();
-            return true;
+            continue;
+        }
+
+        const std::string data = read_message.value("data", std::string{});
+        if (type == "mysqlLoginFeedBack")
+        {
+            request_timeout_timer->stop();
+            pending_request = pending_request_type::none;
+            const bool success = data == "success";
+            messageBox::popup(
+                _loginWidget,
+                success ? "登录成功" : "登录失败",
+                success ? messageBox::Type::Success : messageBox::Type::Error
+            );
+            if (success)
+            {
+                show();
+                _loginWidget->close();
+            }
+            continue;
+        }
+
+        if (type == "mysqlCreateUserFeedBack")
+        {
+            request_timeout_timer->stop();
+            pending_request = pending_request_type::none;
+            const bool success = data == "success";
+            messageBox::popup(
+                _createUserWidget,
+                success ? "注册成功" : "注册失败：用户名已存在",
+                success ? messageBox::Type::Success : messageBox::Type::Error
+            );
+            if (success)
+            {
+                _createUserWidget->close();
+                _loginWidget->show();
+            }
         }
     }
-    return false;
 }

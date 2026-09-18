@@ -36,7 +36,9 @@ void chatClient::doRead() {
                 std::getline(is, line);
                 try {
                     const auto readMsg = nlohmann::json::parse(line);
-                    requestedDeque.push_back(readMsg);
+                    // 完整 JSON 解析完成后再短暂持锁，避免阻塞 Qt 线程。
+                    std::lock_guard<std::mutex> lock(requested_mutex);
+                    requested_messages.push_back(readMsg);
                 } catch (std::exception &error) {
                     std::cerr << error.what() << std::endl;
                 }
@@ -100,4 +102,17 @@ void chatClient::close() {
     boost::asio::post(io_, [this]() {
         clientSocket.close();
     });
+}
+
+bool chatClient::try_pop_message(nlohmann::json &incoming_message)
+{
+    std::lock_guard<std::mutex> lock(requested_mutex);
+    if (requested_messages.empty())
+    {
+        return false;
+    }
+
+    incoming_message = std::move(requested_messages.front());
+    requested_messages.pop_front();
+    return true;
 }
