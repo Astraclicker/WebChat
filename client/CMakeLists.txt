@@ -7,6 +7,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 # 仓库没有完整携带 Boost 子模块，直接使用系统安装的头文件包。
+include(FetchContent)
 find_package(Boost REQUIRED)
 
 #使用utf-8

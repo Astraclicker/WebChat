@@ -9,3 +9,6 @@ client/build_release
 client/bin
 
 server/build
+client/build
+
+CMakeCache.txt
