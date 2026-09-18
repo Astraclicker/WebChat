@@ -46,6 +46,13 @@ FetchContent_Declare(
         boost
         SOURCE_DIR ${CMAKE_SOURCE_DIR}/lib/boost
 )
+
+FetchContent_Declare(
+        SQL++
+        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/SQL++
+)
+
+set(SQL++_DIR ${CMAKE_SOURCE_DIR}/lib/SQL++)
 set(INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
 
 #设置子目录
@@ -67,6 +74,7 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 target_include_directories(
         ${PROJECT_NAME}
         PUBLIC
+        ${CMAKE_SOURCE_DIR}/lib/SQL++
         ${CMAKE_SOURCE_DIR}/src
 )
 
@@ -77,6 +85,7 @@ target_link_libraries(
         Boost::asio
         Web
         GUI
+        
 )
 
 
