@@ -42,28 +42,37 @@ void createUser(
     astra_sql::MySQLpp &mysqlAPI,
     const std::string &loginUserName,
     const std::string &password,
-    tcp::socket &sessionSocker) {
-    if (loginUserName.empty() || password.empty()) {
-        std::cout << "createUser failed: empty userName or password" << std::endl;
-        return;
-    }
-
-    const astra_sql::item userData{
-        {"userName", loginUserName},
-        {"password", password}
-    };
-    const astra_sql::mysqlItemType userType{
-        astra_sql::mysqlDataType::String,
-        astra_sql::mysqlDataType::String,
-    };
-    const auto result = mysqlAPI.addItem("users", userData, userType);
-
-    const bool ok = result == astra_sql::SQLppError::success;
+    tcp::socket &sessionSocker)
+{
     nlohmann::json back;
     back["type"] = "mysqlCreateUserFeedBack";
-    if (ok) {
+
+    bool ok = false;
+    if (loginUserName.empty() || password.empty())
+    {
+        // 协议请求必须有且仅有一次响应；校验失败也不能直接返回让客户端一直等待。
+        std::cout << "createUser failed: empty userName or password" << std::endl;
+    }
+    else
+    {
+        const astra_sql::item userData{
+            {"userName", loginUserName},
+            {"password", password}
+        };
+        const astra_sql::mysqlItemType userType{
+            astra_sql::mysqlDataType::String,
+            astra_sql::mysqlDataType::String,
+        };
+        const auto result = mysqlAPI.addItem("users", userData, userType);
+        ok = result == astra_sql::SQLppError::success;
+    }
+
+    if (ok)
+    {
         back["data"] = "success";
-    } else {
+    }
+    else
+    {
         back["data"] = "failed";
     }
 
