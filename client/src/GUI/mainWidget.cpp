@@ -4,6 +4,9 @@
 #include <ctime>
 #include "serverWidget.h"
 #include <QTime>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QVBoxLayout>
 
 mainWidget::mainWidget(
     QWidget *parent,
@@ -14,13 +17,29 @@ mainWidget::mainWidget(
     this->setWindowTitle(title.c_str());
     this->setMinimumSize(800, 600);
 
-    //mainWidget 组件初始化
-    textEdit = new QPlainTextEdit(this);
-    btnSend = new QPushButton(this);
-    btnSend->setText("发送");
-    btnSend->move(100, 100);
-    btnSend->setFixedSize(200, 100);
-    btnSend->show();
+    // 聊天窗口必须同时呈现历史、接收者和输入区；原来的绝对定位会让输入框与按钮重叠。
+    auto *main_layout = new QVBoxLayout(this);
+    message_history = new QPlainTextEdit(this);
+    message_history->setReadOnly(true);
+    message_history->setPlaceholderText("聊天记录会显示在这里");
+
+    auto *receiver_layout = new QHBoxLayout();
+    auto *receiver_label = new QLabel("接收者：", this);
+    receiver_input = new QLineEdit(this);
+    receiver_input->setText("root");
+    receiver_input->setPlaceholderText("输入对方的用户名");
+    receiver_layout->addWidget(receiver_label);
+    receiver_layout->addWidget(receiver_input);
+
+    message_input = new QPlainTextEdit(this);
+    message_input->setPlaceholderText("输入消息");
+    message_input->setMaximumHeight(120);
+    button_send = new QPushButton("发送", this);
+
+    main_layout->addWidget(message_history, 1);
+    main_layout->addLayout(receiver_layout);
+    main_layout->addWidget(message_input);
+    main_layout->addWidget(button_send, 0, Qt::AlignRight);
 
     // WSLg/Wayland 下，鼠标位置可能暂时不属于 Qt 已识别的任何屏幕。
     const QScreen *current_screen = QGuiApplication::screenAt(QCursor::pos());
@@ -53,15 +72,27 @@ mainWidget::mainWidget(
     });
 
     //连接发送消息请求
-    connect(btnSend, &QPushButton::clicked, this, [this, &webAPI]() {
+    connect(button_send, &QPushButton::clicked, this, [this, &webAPI]() {
         nlohmann::json jsonData;
 
-        //TODO 指定接收者
-        //测试版本，只发给root
-        jsonData["receiver"] = "root";
-        jsonData["text"] = textEdit->toPlainText().toStdString();
+        const std::string receiver = receiver_input->text().trimmed().toStdString();
+        const std::string text = message_input->toPlainText().trimmed().toStdString();
+        if (receiver.empty() || text.empty())
+        {
+            messageBox::popup(this, "接收者和消息都不能为空", messageBox::Type::Error);
+            return;
+        }
+
+        jsonData["receiver"] = receiver;
+        jsonData["text"] = text;
         message outgoing_message{.data = jsonData.dump(), .type = message_type::text};
         webAPI.write(outgoing_message);
+
+        // 本地回显表示消息已进入客户端发送队列；对方收到后会看到服务端转发的记录。
+        message_history->appendPlainText(
+            QString::fromStdString("[我 -> " + receiver + "]: " + text)
+        );
+        message_input->clear();
     });
 
     //连接创建用户请求
@@ -142,7 +173,8 @@ bool mainWidget::checkReturnLoop(chatClient &webAPI, QWidget *parent) {
         const auto text = data.value("text", std::string{});
 
         if (type == "text") {
-            messageBox::popup(nullptr, "[" + sender + "]: " + text, messageBox::Type::Info);
+            // 收到的聊天内容应留在主窗口中，短暂的桌面提示不能充当聊天记录。
+            message_history->appendPlainText(QString::fromStdString("[" + sender + "]: " + text));
             webAPI.requestedDeque.pop_front();
             return true;
         }
