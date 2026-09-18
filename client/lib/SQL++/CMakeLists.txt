@@ -95,5 +95,4 @@ set(REDIS_PLUS_PLUS_BUILD_TEST OFF CACHE BOOL "Build tests for redis++" FORCE)
 set(DISABLE_TESTS ON CACHE BOOL "Disable hiredis tests" FORCE)
 
 add_subdirectory(Redis++)
-add_subdirectory(MySQL++)
 add_subdirectory(SQLite++)

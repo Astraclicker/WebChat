@@ -1,4 +1,5 @@
 #include "client.h"
+#include "../SQLite/SQLite.h"
 #include <iostream>
 
 //构造函数
@@ -6,6 +7,7 @@ chatClient::chatClient(
     boost::asio::io_context &io,
     const tcp::resolver::results_type &endpoints
 ) : io_(io), clientSocket(io) {
+    testFunc();
     Connect(endpoints);
 }
 

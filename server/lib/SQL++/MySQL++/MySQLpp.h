@@ -39,6 +39,21 @@ namespace astra_sql {
         ~MySQLpp() = default;
 
         /**
+         * @brief sqlite创建表
+         * @param tableName 要创建的表名
+         * @param createRule 创建表的规则
+         * @param primaryKey 主键规则
+         * @param uniqueKey 为唯一键规则
+         * @return 报错枚举
+         */
+
+        SQLppError mysqlCreateTable(
+            const std::string &tableName,
+            const std::vector<createTableRule> &createRule,
+            const primaryKeyRule *primaryKey,
+            const uniqueKeyRule *uniqueKey);
+
+        /**
          * @brief 切换操作的数据库
          * @param SchemaName 切换到的数据库名
          */
