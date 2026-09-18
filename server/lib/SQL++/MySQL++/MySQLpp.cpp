@@ -13,6 +13,7 @@ namespace astra_sql {
             conn.reset(driver->connect("tcp://" + host + ":" + std::to_string(port), UserName, password));
             statement.reset(conn->createStatement());
         } catch (const std::exception &e) {
+            // 连接失败后对象不可用；继续构造只会把错误推迟为空指针崩溃。
             throw std::runtime_error(std::string("MySQL connection failed: ") + e.what());
         }
         std::clog << "MySQL connect successfully" << std::endl;

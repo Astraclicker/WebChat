@@ -6,6 +6,7 @@
 
 namespace
 {
+    // 连接信息由启动进程注入，避免把开发者账号和密码硬编码进仓库。
     std::string get_environment_value(const char *name, const char *fallback)
     {
         const char *value = std::getenv(name);
@@ -22,6 +23,7 @@ namespace
 
 //构造函数
 session::session(tcp::socket socket, std::set<std::shared_ptr<session> > &sessions)
+    // 学习项目仍为“每个会话一条同步数据库连接”；并发扩大后会阻塞 Asio 线程，后续再引入连接池。
     : mysqlAPI(
           get_environment_value("WEBCHAT_DB_HOST", "127.0.0.1"),
           get_database_port(),

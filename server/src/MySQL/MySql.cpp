@@ -30,6 +30,7 @@ void login(
     } else {
         back["data"] = "failed";
     }
+    // async_write 完成前缓冲区必须存活，由回调共同持有响应字符串。
     auto send_msg = std::make_shared<std::string>(back.dump() + '\n');
     boost::asio::async_write(
         sessionSocker, boost::asio::buffer(*send_msg),
@@ -76,6 +77,7 @@ void createUser(
         back["data"] = "failed";
     }
 
+    // 局部字符串会提前析构，因此把异步发送缓冲区的生命周期绑定到完成回调。
     auto send_msg = std::make_shared<std::string>(back.dump() + '\n');
 
     boost::asio::async_write(

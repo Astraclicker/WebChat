@@ -83,4 +83,5 @@ else()
     set(MySQL_COPY_DLLS FALSE)
 endif()
 
+# 服务端当前数据流只使用 MySQL；不再配置源码不完整且没有参与运行的 Redis/SQLite 子项目。
 add_subdirectory(MySQL++)

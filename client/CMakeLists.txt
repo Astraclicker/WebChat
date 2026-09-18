@@ -1,3 +1,4 @@
+# 项目没有使用 CMake 4.x 特性；3.28 与 Ubuntu 24.04 系统包一致，避免虚假的版本阻塞。
 cmake_minimum_required(VERSION 3.28)
 project(client)
 set(CMAKE_CXX_STANDARD 20)
@@ -5,6 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
+# 仓库没有完整携带 Boost 子模块，直接使用系统安装的头文件包。
 find_package(Boost REQUIRED)
 
 #使用utf-8
@@ -29,6 +31,7 @@ find_package(Qt6
         Core
         Gui
         Widgets
+        # 当前界面没有音频功能，不应强制要求 Qt Multimedia。
         REQUIRED
 )
 
