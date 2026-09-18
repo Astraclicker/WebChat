@@ -7,7 +7,16 @@ session::session(tcp::socket socket, std::set<std::shared_ptr<session> > &sessio
     : mysqlAPI("127.0.0.1", astra_sql::MySQL_DEFAULT_PORT, "astraclicker", "1108372699a@A"),
       sessionSocker(std::move(socket)),
       sessionSet(sessions) {
+    mysqlAPI.createDatabase("ChatServer");
     mysqlAPI.switchDatabase("ChatServer");
+    auto createRule = std::vector<astra_sql::createTableRule>{
+        {"uid", "int", "not null auto_increment"},
+        {"userName", "varchar(50)", "not null"},
+        {"password", "varchar(50)", "not null"}
+    };
+    const astra_sql::primaryKeyRule pk{"uid"};
+    const astra_sql::uniqueKeyRule uk{"userName"};
+    mysqlAPI.mysqlCreateTable("users", createRule, &pk, &uk);
 }
 
 //启动接口

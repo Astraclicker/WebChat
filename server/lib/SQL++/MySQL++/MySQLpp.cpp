@@ -18,6 +18,45 @@ namespace astra_sql {
         std::clog << "MySQL connect successfully" << std::endl;
     }
 
+    // 创建表
+    SQLppError MySQLpp::mysqlCreateTable(
+        const std::string &tableName,
+        const std::vector<createTableRule> &createRule,
+        const primaryKeyRule *primaryKey,
+        const uniqueKeyRule *uniqueKey) {
+        cmd = "create table if not exists " + tableName + " ( ";
+        for (const auto &i: createRule) {
+            cmd += i.field + " " + i.type + " " + i.restriction + ",";
+        }
+        if (primaryKey != nullptr) {
+            cmd += "primary key (";
+            for (auto i = primaryKey->begin(); i != primaryKey->end(); ++i) {
+                cmd += i == primaryKey->begin() ? *i : "," + *i;
+            }
+            cmd += "),";
+        }
+        if (uniqueKey != nullptr) {
+            cmd += "unique (";
+            for (auto i = uniqueKey->begin(); i != uniqueKey->end(); ++i) {
+                cmd += i == uniqueKey->begin() ? *i : "," + *i;
+            }
+            cmd += "),";
+        }
+        cmd.pop_back();
+        cmd += " );";
+
+        try {
+            stmt.reset(conn->prepareStatement(this->cmd));
+            stmt->execute();
+        } catch (const std::exception &e) {
+            cmd.clear();
+            std::cerr << e.what() << '\n';
+            return SQLppError::error_create;
+        }
+        cmd.clear();
+        return SQLppError::success;
+    }
+
     // 切换数据库
     SQLppError MySQLpp::switchDatabase(const std::string &SchemaName) {
         try {
