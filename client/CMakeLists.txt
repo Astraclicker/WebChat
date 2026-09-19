@@ -6,9 +6,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
-# 仓库没有完整携带 Boost 子模块，直接使用系统安装的头文件包。
+
 include(FetchContent)
-find_package(Boost REQUIRED)
+
 
 #使用utf-8
 if(MSVC)
@@ -60,35 +60,3 @@ set(INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
 
 #设置子目录
 add_subdirectory(src)
-
-add_executable(
-        ${PROJECT_NAME}
-        # 程序入口已经归入 src；显式写出新路径，避免干净配置时仍查找旧位置。
-        src/main.cpp
-)
-
-# Windows 下自动复制 Qt 运行库；Linux 直接使用系统安装的 Qt。
-if(WIN32)
-        find_program(WINDEPLOYQT_EXE windeployqt HINTS "${CMAKE_PREFIX_PATH}/bin" REQUIRED)
-        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                COMMAND "${WINDEPLOYQT_EXE}" "$<TARGET_FILE:${PROJECT_NAME}>"
-                COMMENT "Deploy Qt runtime dependencies"
-        )
-endif()
-
-target_include_directories(
-        ${PROJECT_NAME}
-        PUBLIC
-        ${CMAKE_SOURCE_DIR}/lib/SQL++
-        ${CMAKE_SOURCE_DIR}/src
-)
-
-
-target_link_libraries(
-        ${PROJECT_NAME}
-        PUBLIC
-        Boost::headers
-        Web
-        GUI
-        
-)
