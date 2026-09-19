@@ -1,6 +1,9 @@
 project(Web)
 
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+
+FetchContent_MakeAvailable(boost)
+
 add_library(
         ${PROJECT_NAME}
         session.cpp
@@ -16,6 +19,6 @@ target_include_directories(
 target_link_libraries(
         ${PROJECT_NAME}
         PUBLIC
-        Boost::headers
+        Boost::asio
         MySQL
 )
