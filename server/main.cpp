@@ -7,7 +7,7 @@ int main()
     {
         boost::asio::io_context io;
         // 监听端口必须与客户端固定连接的 9191 一致，否则两端都启动却永远无法建立会话。
-        server chat_server(io, 9191);
+        server chat_server(io, 8080);
         std::cout << "Chat server started on port 9191" << std::endl;
         io.run();
     }

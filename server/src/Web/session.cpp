@@ -4,36 +4,26 @@
 #include <memory>
 #include "../MySQL/MySql.h"
 
-namespace
-{
-    // 连接信息由启动进程注入，避免把开发者账号和密码硬编码进仓库。
-    std::string get_environment_value(const char *name, const char *fallback)
-    {
-        const char *value = std::getenv(name);
-        return value == nullptr ? fallback : value;
-    }
-
-    unsigned int get_database_port()
-    {
-        return static_cast<unsigned int>(std::stoul(
-            get_environment_value("WEBCHAT_DB_PORT", "3306")
-        ));
-    }
-}
-
 //构造函数
 session::session(tcp::socket socket, std::set<std::shared_ptr<session> > &sessions)
-    // 学习项目仍为“每个会话一条同步数据库连接”；并发扩大后会阻塞 Asio 线程，后续再引入连接池。
     : mysqlAPI(
-          get_environment_value("WEBCHAT_DB_HOST", "127.0.0.1"),
-          get_database_port(),
-          get_environment_value("WEBCHAT_DB_USER", "webchat"),
-          get_environment_value("WEBCHAT_DB_PASSWORD", "")
+          "127.0.0.1",
+          astra_sql::MySQL_DEFAULT_PORT,
+          "astraclicker",
+          "1108372699a@A"
       ),
       sessionSocker(std::move(socket)),
-      sessionSet(sessions)
-{
-    mysqlAPI.switchDatabase(get_environment_value("WEBCHAT_DB_NAME", "ChatServer"));
+      sessionSet(sessions) {
+    auto createRule = std::vector<astra_sql::createTableRule>{
+        {"uid", "int", "not null auto_increment"},
+        {"userName", "varchar(50)", "not null"},
+        {"password", "varchar(50)", "not null"}
+    };
+    const astra_sql::primaryKeyRule pk{"uid"};
+    const astra_sql::uniqueKeyRule uk{"userName"};
+    mysqlAPI.mysqlCreateTable("users", createRule, &pk, &uk);
+
+    mysqlAPI.switchDatabase("ChatServer");
 }
 
 //启动接口
@@ -52,9 +42,7 @@ void session::broadCast(const std::string &msg, const std::string &receiver) con
     const std::string frame = out.dump() + "\n";
 
     for (auto &session: sessionSet) {
-        // 原设计排除了发送者：只有一个客户端时，即使给自己发消息也永远没有反馈。
-        // 学习版仍固定发送给 root，但把消息同时回显给发送者，形成最小可观察闭环。
-        if (session.get() == this || session->myUserName == receiver) {
+        if (session->myUserName == receiver) {
             session->deliver(frame);
             std::cout << this->sessionSocker.remote_endpoint() << " send to ";
             std::cout << session->sessionSocker.remote_endpoint() << std::endl;
