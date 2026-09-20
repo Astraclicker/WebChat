@@ -12,10 +12,14 @@ protected:
     boost::asio::io_context &io_;
     tcp::socket clientSocket;
     boost::asio::streambuf readBuf;
+
+    //保存发送的消息的队列
     std::deque<std::string> writeMsgs;
 
-    // Asio 与 Qt 分属不同线程，接收队列只能通过互斥保护的接口访问。
+    // Asio 与 Qt 分属不同线程，接收队列通过互斥保护的接口访问。
     std::mutex requested_mutex;
+
+    //保存接收的消息的队列
     std::deque<nlohmann::json> requested_messages;
 
     //连接到服务端

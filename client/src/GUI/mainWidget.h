@@ -12,11 +12,10 @@ class mainWidget : public QWidget {
     Q_OBJECT
 
 protected:
-    enum class pending_request_type
-    {
+    enum class pending_request_type {
         none,
         login,
-        create_user
+        createUser
     };
 
     //屏幕长宽
@@ -25,6 +24,7 @@ protected:
 
     // Qt 定时器只做一次非阻塞取队列，不在 GUI 线程中忙等网络响应。
     void process_received_messages(chatClient &web_api);
+
     QTimer *message_poll_timer;
     QTimer *request_timeout_timer;
     pending_request_type pending_request = pending_request_type::none;
@@ -35,7 +35,11 @@ protected:
     //发送按钮
     QPushButton *button_send;
 
+    //初始化信号与槽的连接
+    void initConnect(chatClient &web_api);
+
 public:
+    //构造函数
     mainWidget(
         QWidget *parent,
         const std::string &title,
@@ -45,5 +49,4 @@ public:
     //子窗口
     loginWidget *_loginWidget;
     createUserWidget *_createUserWidget;
-
 };

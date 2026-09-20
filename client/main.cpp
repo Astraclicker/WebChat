@@ -10,7 +10,6 @@ int main(int argc, char *argv[])
     const auto endpoints = resolver.resolve("127.0.0.1", "9191");
     chatClient chat(io, endpoints);
 
-    // Asio 与 Qt 都需要事件循环；这里只创建一个可回收的网络线程，避免原先的嵌套线程无法收尾。
     std::thread client_thread([&]()
     {
         try
@@ -27,6 +26,7 @@ int main(int argc, char *argv[])
     // 创建窗口
     mainWidget window_main(nullptr, "chat", chat);
     const int result = QApplication::exec();
+
     // GUI 退出后先让仍在运行的 Asio 关闭 socket，再等待网络线程结束。
     chat.close();
     client_thread.join();

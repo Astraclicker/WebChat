@@ -6,13 +6,12 @@ mainWidget::mainWidget(
     QWidget *parent,
     const std::string &title,
     chatClient &web_api
-) : QWidget(parent)
-{
+) : QWidget(parent) {
     //mainWidget 窗口设置
     this->setWindowTitle(title.c_str());
     this->setMinimumSize(800, 600);
 
-    // 保留学习项目原有界面，只修复影响运行的消息链路，不扩展聊天产品功能。
+    //TODO 发送界面绘制
     message_input = new QPlainTextEdit(this);
     button_send = new QPushButton(this);
     button_send->setText("发送");
@@ -20,13 +19,11 @@ mainWidget::mainWidget(
     button_send->setFixedSize(200, 100);
     button_send->show();
 
-    // WSLg/Wayland 下，鼠标位置可能暂时不属于 Qt 已识别的任何屏幕。
+    //获取屏幕长宽
     const QScreen *current_screen = QGuiApplication::screenAt(QCursor::pos());
-    if (current_screen == nullptr)
-    {
+    if (current_screen == nullptr) {
         current_screen = QGuiApplication::primaryScreen();
     }
-
     const QRect screen_geometry = current_screen == nullptr
                                       ? QRect(0, 0, 1920, 1080)
                                       : current_screen->availableGeometry();
@@ -37,11 +34,24 @@ mainWidget::mainWidget(
     _loginWidget = new loginWidget(nullptr, screenW, screenH);
     _createUserWidget = new createUserWidget(nullptr, screenW, screenH);
 
-    //连接登录请求
-    connect(_loginWidget, &loginWidget::loginRequested, this, [&web_api, this]()
-    {
-        if (pending_request != pending_request_type::none)
-        {
+    //请求超时设置
+    request_timeout_timer = new QTimer(this);
+    request_timeout_timer->setSingleShot(true);
+
+    //轮询检查接收队列间隔时间
+    message_poll_timer = new QTimer(this);
+    message_poll_timer->start(20);
+
+    initConnect(web_api);
+
+    //展示登录界面
+    _loginWidget->show();
+}
+
+void mainWidget::initConnect(chatClient &web_api) {
+    //连接登录按钮与发送登录请求
+    connect(_loginWidget, &loginWidget::loginRequested, this, [&web_api, this]() {
+        if (pending_request != pending_request_type::none) {
             messageBox::popup(_loginWidget, "正在等待上一个请求", messageBox::Type::Info);
             return;
         }
@@ -55,18 +65,16 @@ mainWidget::mainWidget(
         request_timeout_timer->start(5000);
     });
 
-    //连接发送消息请求
-    connect(button_send, &QPushButton::clicked, this, [this, &web_api]()
-    {
+    //连接发送按钮与发送消息请求
+    connect(button_send, &QPushButton::clicked, this, [this, &web_api]() {
         nlohmann::json json_data;
         const std::string text = message_input->toPlainText().trimmed().toStdString();
-        if (text.empty())
-        {
+        if (text.empty()) {
             messageBox::popup(this, "消息不能为空", messageBox::Type::Error);
             return;
         }
 
-        // 原设计缺少接收者选择，暂时保留发送给 root 的学习版协议，不在本轮扩展 UI。
+        // TODO 选择接收者
         json_data["receiver"] = "root";
         json_data["text"] = text;
         message outgoing_message{.data = json_data.dump(), .type = message_type::text};
@@ -74,24 +82,20 @@ mainWidget::mainWidget(
         message_input->clear();
     });
 
-    //连接创建用户请求
-    connect(_loginWidget, &loginWidget::createUserRequested, this, [this]()
-    {
+    //连接创建用户按钮与打开创建用户界面
+    connect(_loginWidget, &loginWidget::createUserRequested, this, [this]() {
         _loginWidget->close();
         _createUserWidget->show();
     });
 
-    //连接取消按请求
-    connect(_loginWidget, &loginWidget::cancelRequested, this, [this]()
-    {
+    //连接取消按与关闭窗口
+    connect(_loginWidget, &loginWidget::cancelRequested, this, [this]() {
         _loginWidget->close();
     });
 
-    //连接确认创建用户请求
-    connect(_createUserWidget, &createUserWidget::createUserRequested, this, [&web_api, this]()
-    {
-        if (pending_request != pending_request_type::none)
-        {
+    //连接确认创建用户与发送创建用户请求
+    connect(_createUserWidget, &createUserWidget::createUserRequested, this, [&web_api, this]() {
+        if (pending_request != pending_request_type::none) {
             messageBox::popup(_createUserWidget, "正在等待上一个请求", messageBox::Type::Info);
             return;
         }
@@ -101,58 +105,49 @@ mainWidget::mainWidget(
         json_data["password"] = _createUserWidget->getPassword();
         message outgoing_message{.data = json_data.dump(), .type = message_type::create_user_requested};
         web_api.write(outgoing_message);
-        pending_request = pending_request_type::create_user;
+        pending_request = pending_request_type::createUser;
         request_timeout_timer->start(5000);
     });
 
-    //连接取消创建用户请求
-    connect(_createUserWidget, &createUserWidget::cancelRequested, this, [this]()
-    {
+    //连接取消创建用户与关闭创建用户界面
+    connect(_createUserWidget, &createUserWidget::cancelRequested, this, [this]() {
         _createUserWidget->close();
         _loginWidget->show();
     });
 
-    _loginWidget->show();
-    request_timeout_timer = new QTimer(this);
-    request_timeout_timer->setSingleShot(true);
-    connect(request_timeout_timer, &QTimer::timeout, this, [this]()
-    {
-        QWidget *request_window = pending_request == pending_request_type::create_user
+    //连接请求超时与处理
+    connect(request_timeout_timer, &QTimer::timeout, this, [this]() {
+        QWidget *request_window = pending_request == pending_request_type::createUser
                                       ? static_cast<QWidget *>(_createUserWidget)
                                       : static_cast<QWidget *>(_loginWidget);
         pending_request = pending_request_type::none;
         messageBox::popup(request_window, "请求超时", messageBox::Type::Error);
     });
 
-    // 20 ms 轮询不会阻塞 GUI，也避免原先 0 ms 自递归持续占用一个 CPU 核心。
-    message_poll_timer = new QTimer(this);
-    connect(message_poll_timer, &QTimer::timeout, this, [&web_api, this]()
-    {
+    //设置轮询检查接收队列
+    connect(message_poll_timer, &QTimer::timeout, this, [&web_api, this]() {
         process_received_messages(web_api);
     });
-    message_poll_timer->start(20);
 }
 
-void mainWidget::process_received_messages(chatClient &web_api)
-{
+//检查接收队列并打印消息
+void mainWidget::process_received_messages(chatClient &web_api) {
     nlohmann::json read_message;
-    while (web_api.try_pop_message(read_message))
-    {
+    while (web_api.try_pop_message(read_message)) {
         const std::string type = read_message.value("type", std::string{});
-        if (type == "text")
-        {
+        if (type == "text") {
             const auto data = read_message.value("data", nlohmann::json::object());
             const std::string sender = data.value("sender", std::string{});
             const std::string text = data.value("text", std::string{});
 
-            // 原项目没有聊天记录控件，先沿用提示框证明消息链路已闭环。
+            //TODO 聊天框
             messageBox::popup(this, "[" + sender + "]: " + text, messageBox::Type::Info);
+            //TODO 写入聊天记录
             continue;
         }
 
         const std::string data = read_message.value("data", std::string{});
-        if (type == "mysqlLoginFeedBack")
-        {
+        if (type == "mysqlLoginFeedBack") {
             request_timeout_timer->stop();
             pending_request = pending_request_type::none;
             const bool success = data == "success";
@@ -160,17 +155,16 @@ void mainWidget::process_received_messages(chatClient &web_api)
                 _loginWidget,
                 success ? "登录成功" : "登录失败",
                 success ? messageBox::Type::Success : messageBox::Type::Error
+                //TODO 登录成功后读取本地json加载聊天记录
             );
-            if (success)
-            {
+            if (success) {
                 show();
                 _loginWidget->close();
             }
             continue;
         }
 
-        if (type == "mysqlCreateUserFeedBack")
-        {
+        if (type == "mysqlCreateUserFeedBack") {
             request_timeout_timer->stop();
             pending_request = pending_request_type::none;
             const bool success = data == "success";
@@ -178,9 +172,9 @@ void mainWidget::process_received_messages(chatClient &web_api)
                 _createUserWidget,
                 success ? "注册成功" : "注册失败：用户名已存在",
                 success ? messageBox::Type::Success : messageBox::Type::Error
+                //TODO 为新用户创建SQLite
             );
-            if (success)
-            {
+            if (success) {
                 _createUserWidget->close();
                 _loginWidget->show();
             }
