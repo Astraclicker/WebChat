@@ -5,14 +5,28 @@ add_library(
     SHARED
     Redispp.cpp
 )
-
+# 给刚刚创建出来的这个库，补上一条头文件搜索路径
+# 而且使用这个库的其他 target 也继承这条路径。
+target_include_directories(
+    ${PROJECT_NAME}
+    PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
+)
 #导出所有符号
 set_target_properties(${PROJECT_NAME} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
-
+# 把普通变量设置替换为缓存变量
 set(BUILD_SHARED_LIBS OFF)
 set(DISABLE_TESTS ON CACHE BOOL "Disable hiredis tests" FORCE)
-set(REDIS_PLUS_PLUS_BUILD_STATIC ON)
-set(REDIS_PLUS_PLUS_BUILD_SHARED OFF)
+set(REDIS_PLUS_PLUS_BUILD_STATIC
+    ON
+    CACHE BOOL
+    "Build redis-plus-plus static library"
+    FORCE)
+set(REDIS_PLUS_PLUS_BUILD_SHARED
+    OFF
+    CACHE BOOL
+    "Build redis-plus-plus shared library"
+    FORCE)
 set(REDIS_PLUS_PLUS_BUILD_TEST OFF CACHE BOOL "Build tests for redis++" FORCE)
 
 # Linux/macOS 下 hiredis/redis++ 静态库以 -fPIC 编译，链接进共享库 libRedis++.so

@@ -5,7 +5,7 @@
 #include<def.h>
 #include <json.hpp>
 #include "../MySQL/MySql.h"
-
+#include <Redis++/Redispp.h>
 using namespace boost::asio::ip;
 
 //会话类
@@ -55,6 +55,7 @@ class server {
 protected:
     tcp::acceptor serverAcceptor;
     std::set<std::shared_ptr<session> > sessionSet;
+
 
     void doAccept();
 
