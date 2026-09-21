@@ -1,6 +1,9 @@
 #include "mainWidget.h"
 #include <QScreen>
 #include "serverWidget.h"
+#include <fstream>
+#include <cstdlib>
+#include <filesystem>
 
 mainWidget::mainWidget(
     QWidget *parent,
@@ -130,6 +133,30 @@ void mainWidget::initConnect(chatClient &web_api) {
     });
 }
 
+//把一条聊天消息追加写入当前用户的本地记录文件
+void mainWidget::append_chat_history(const std::string &sender, const std::string &text) {
+    //没登录就不记录，避免写到莫名其妙的地方
+    if (current_user.empty()) {
+        return;
+    }
+
+    //组装要存储的内容（和网络协议一样用 JSON）
+    nlohmann::json record;
+    record["sender"] = sender;
+    record["text"] = text;
+
+    //拼出目标路径： $HOME/talk_history/<用户名>.jsonl
+    const std::filesystem::path dir =
+        std::filesystem::path(std::getenv("HOME")) / "talk_history";
+    std::filesystem::create_directories(dir);
+
+    const std::filesystem::path file = dir / (current_user + ".jsonl");
+
+    //追加写入（app 模式保证不覆盖已有内容）
+    std::ofstream out(file, std::ios::app);
+    out << record.dump() << '\n';
+}
+
 //检查接收队列并打印消息
 void mainWidget::process_received_messages(chatClient &web_api) {
     nlohmann::json read_message;
@@ -142,7 +169,8 @@ void mainWidget::process_received_messages(chatClient &web_api) {
 
             //TODO 聊天框 凯
             messageBox::popup(this, "[" + sender + "]: " + text, messageBox::Type::Info);
-            //TODO 写入聊天记录 凯
+            //写入聊天记录 凯
+            append_chat_history(sender, text);
             continue;
         }
 
@@ -158,6 +186,7 @@ void mainWidget::process_received_messages(chatClient &web_api) {
                 //TODO 登录成功后读取本地json加载聊天记录 astraclicker
             );
             if (success) {
+                current_user = _loginWidget->getUserName();
                 show();
                 _loginWidget->close();
             }
