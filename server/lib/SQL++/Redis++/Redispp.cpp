@@ -8,26 +8,42 @@ namespace astra_sql {
         const std::string *password,
         const int db
     ) {
-        opts = new sw::redis::ConnectionOptions;
-        opts->host = hostName;
-        opts->port = port;
+        // opts = new sw::redis::ConnectionOptions;
+        //使用临时对象
+
+        sw::redis::ConnectionOptions connection_options;
+        connection_options.host = hostName;
+        connection_options.port = port;
         if (userName != nullptr) {
-            opts->user = *userName;
+            connection_options.user = *userName;
         }
         if (password != nullptr) {
-            opts->password = *password;
+            connection_options.password = *password;
         }
+        connection_options.db = db;
 
-        opts->db = db;
+        //如果超时
+        connection_options.connect_timeout = std::chrono::milliseconds(1000);
+        connection_options.socket_timeout = std::chrono::milliseconds(1000);
 
-        try {
-            redis = new sw::redis::Redis(*opts);
-            redis->ping();
-        } catch (const std::exception &e) {
-            std::cerr << e.what() << '\n';
-            return;
+
+        redis_client = std::make_unique<sw::redis::Redis>(connection_options);
+            // redis_client->ping();
+            //使用懒连接
+            //把构造和连接分开,ping应该作为独立的其他的健康检查
+            //PING 成功不保证下一毫秒的 GET 一定成功,直接get即可
+            //GET 本身就会尝试连接并报告异常。
+        //如果try catch捕获异常return这样返回依然会导致构造函数发生,然后对象被建立
+        //日志往外面放一下
+    }
+
+    std::optional<std::string> Redispp::get_string(const std::string &key)
+    {
+        const auto redis_value = redis_client->get(key);
+        if(!redis_value)
+        {
+            return std::nullopt;
         }
-
-        std::clog << "Redis connect successfully" << std::endl;
+        return *redis_value;
     }
 }

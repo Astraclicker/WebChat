@@ -1,6 +1,10 @@
 #pragma once
 #include <string>
-#include<iostream>
+#include <memory>//提供智能指针
+#include <chrono>//明确单位超时
+#include <optional>
+
+ 
 
 #include "../include/SQL.h"
 
@@ -9,12 +13,16 @@
 namespace astra_sql {
     class Redispp {
     private:
-        // Redis连接配置
-        sw::redis::ConnectionOptions *opts;
+
         // Redis操作接口
-        sw::redis::Redis *redis;
+        std::unique_ptr<sw::redis::Redis> redis_client;
 
     public:
+        /**
+         * @brief Redis数据访问封装类
+         * @details
+         * 为web_chat业务逻辑提供Redis数据读写接口 
+         */
         /**
          * @brief 构造函数
          * @param hostName host地址
@@ -30,5 +38,14 @@ namespace astra_sql {
             const std::string *password,
             int db
         );
+
+        /**
+         * @brief 读取字符串键
+         * @param key 要读取的Redis键
+         * @return 键存在时返回字符串,否则返回std::nullopt
+         * @throw Redis连接或者命令异常
+         */
+        //使用这个类型来判断缓存是否命中
+        std::optional<std::string> get_string(const std::string &key);
     };
 }
