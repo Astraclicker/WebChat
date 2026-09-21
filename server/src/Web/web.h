@@ -13,6 +13,8 @@ class session : public std::enable_shared_from_this<session> {
 protected:
     //mysql接口
     astra_sql::MySQLpp mysqlAPI;
+    //redis接口
+    astra_sql::Redispp &redisAPI;//这里是引用
     //每个会话维护一个socket
     tcp::socket sessionSocker;
     //读取缓冲区
@@ -37,7 +39,8 @@ public:
 
     //构造函数
     session(tcp::socket socket,
-            std::set<std::shared_ptr<session> > &sessions);
+            std::set<std::shared_ptr<session> > &sessions,
+            astra_sql::Redispp &redis);
 
     //将消息写入发送队列
     void deliver(const std::string &msg);
@@ -53,6 +56,7 @@ public:
 //服务器类，接受连接，管理会话
 class server {
 protected:
+    astra_sql::Redispp redis_api;
     tcp::acceptor serverAcceptor;
     std::set<std::shared_ptr<session> > sessionSet;
 

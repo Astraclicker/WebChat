@@ -5,7 +5,7 @@
 #include "../MySQL/MySql.h"
 
 //构造函数
-session::session(tcp::socket socket, std::set<std::shared_ptr<session> > &sessions)
+session::session(tcp::socket socket, std::set<std::shared_ptr<session> > &sessions,astra_sql::Redispp &redis)
     : mysqlAPI(
           "127.0.0.1",
           astra_sql::MySQL_DEFAULT_PORT,
@@ -13,7 +13,9 @@ session::session(tcp::socket socket, std::set<std::shared_ptr<session> > &sessio
           "1108372699a@A"
       ),
       sessionSocker(std::move(socket)),
-      sessionSet(sessions) {
+      sessionSet(sessions),
+      redisAPI(redis)
+      {
     auto createRule = std::vector<astra_sql::createTableRule>{
         {"uid", "int", "not null auto_increment"},
         {"userName", "varchar(50)", "not null"},
