@@ -8,9 +8,10 @@
 #include <QTimer>
 #include <QPointer>
 #include <QVector>
-#include <QHash>
+#include <QScrollArea>
 #include <QEasingCurve>
 #include <QGraphicsOpacityEffect>
+#include <QVBoxLayout>
 
 //登录界面
 class loginWidget : public QWidget {
@@ -200,6 +201,7 @@ signals:
     void cancelRequested();
 };
 
+//提示框
 class messageBox : public QWidget {
     Q_OBJECT
 
@@ -225,6 +227,9 @@ public:
     bool eventFilter(QObject *watched, QEvent *event) override;
 
 private:
+    //自绘卡片阴影：整棵提示子树只允许挂一个 QGraphicsEffect(子控件模式的 _fade)，
+    void paintEvent(QPaintEvent *event) override;
+
     //把同一组提示重新排到右上角（多个并存时自上而下堆叠）
     //有父窗口时贴父窗口右上角；parent 为空时贴屏幕可用区域右上角（避开任务栏）
     void relayout() const;
@@ -245,4 +250,17 @@ private:
 
     //每个父窗口当前正在显示的提示
     static QHash<QWidget *, QVector<QPointer<messageBox> > > &activeBoxes();
+};
+
+//信息展示界面
+class messageArea : public QScrollArea {
+protected:
+    QWidget *content;
+    QVBoxLayout *contentLayout;
+
+public:
+    messageArea();
+
+    //添加内容
+    void addContent(const std::string &text);
 };

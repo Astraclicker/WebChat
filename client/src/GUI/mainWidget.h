@@ -49,4 +49,5 @@ public:
     //子窗口
     loginWidget *_loginWidget;
     createUserWidget *_createUserWidget;
+    messageArea *_messageArea;
 };

@@ -1,6 +1,7 @@
 #include "serverWidget.h"
 #include <QGraphicsDropShadowEffect>
 #include <QPropertyAnimation>
+#include <QPainter>
 #include <QTimer>
 #include <QLabel>
 #include <QHBoxLayout>
@@ -196,14 +197,38 @@ createUserWidget::createUserWidget(QWidget *parent, int width, int height) : QWi
     });
 }
 
+messageArea::messageArea() {
+    this->setWidgetResizable(true);
+
+    //内容Widget
+    content = new QWidget;
+    contentLayout = new QVBoxLayout(content);
+    this->setWidget(content);
+    setFrameShape(QFrame::NoFrame);
+    contentLayout->setContentsMargins(8, 8, 8, 8);
+    contentLayout->setSpacing(6);
+}
+
+void messageArea::addContent(const std::string &text) {
+    auto *label = new QLabel(QString::fromStdString(text), content);
+    label->setWordWrap(true);
+    contentLayout->addWidget(label);
+}
+
 namespace {
-    constexpr int kToastMargin = 16;    //距离父窗口右上角的外边距
-    constexpr int kToastSpacing = 10;   //多个提示之间的纵向间距
-    constexpr int kShadowPad = 12;      //卡片四周给阴影留的空白
-    constexpr int kCardPadH = 14;       //卡片内左右留白
-    constexpr int kCardPadV = 12;       //卡片内上下留白
-    constexpr int kCardMaxWidth = 300;  //卡片最大宽度
-    constexpr int kCardMinWidth = 160;  //卡片最小宽度
+    constexpr int kToastMargin = 16; //距离父窗口右上角的外边距
+    constexpr int kToastSpacing = 10; //多个提示之间的纵向间距
+    constexpr int kShadowPad = 12; //卡片四周给阴影留的空白
+    constexpr int kCardPadH = 14; //卡片内左右留白
+    constexpr int kCardPadV = 12; //卡片内上下留白
+    constexpr int kCardMaxWidth = 300; //卡片最大宽度
+    constexpr int kCardMinWidth = 160; //卡片最小宽度
+
+    //卡片阴影参数（自绘，见 messageBox::paintEvent）
+    constexpr int kShadowOffsetY = 3; //阴影向下偏移，对齐原来的 0,3
+    constexpr int kShadowAlpha = 70; //最内层阴影的不透明度，对齐原来的 rgba(0,0,0,70)
+    constexpr int kShadowLayers = 4; //阴影层数，越多越接近高斯模糊
+    constexpr qreal kCardRadius = 8.0; //与卡片样式表里的 border-radius 保持一致
 
     //按提示类型取配色
     QString colorOf(const messageBox::Type type) {
@@ -255,14 +280,12 @@ messageBox::messageBox(QWidget *parent, const std::string &text, const Type type
     _card->setObjectName("toastCard");
     _card->setFixedWidth(cardWidth);
     _card->setStyleSheet(QString("QFrame#toastCard { background-color: %1; border-radius: 8px; }")
-                                 .arg(colorOf(type)));
+        .arg(colorOf(type)));
 
-    //卡片阴影（靠外面的 kShadowPad 留出绘制空间）
-    auto *shadow = new QGraphicsDropShadowEffect(_card);
-    shadow->setBlurRadius(18);
-    shadow->setOffset(0, 3);
-    shadow->setColor(QColor(0, 0, 0, 70));
-    _card->setGraphicsEffect(shadow);
+    //卡片阴影改为在 paintEvent 里自绘（见 messageBox::paintEvent）：
+    //这里不能挂 QGraphicsDropShadowEffect，否则会和子控件模式的 _fade 形成嵌套 effect，
+    //提示部分超出父窗口时重绘会报 "A paint device can only be painted by one painter at a time"。
+    //外面那圈 kShadowPad 仍然留给阴影做绘制空间。
 
     //文字
     _label = new QLabel(QString::fromStdString(text), _card);
@@ -306,6 +329,29 @@ messageBox::messageBox(QWidget *parent, const std::string &text, const Type type
 
     if (durationMs > 0) {
         _closeTimer->start(durationMs);
+    }
+}
+
+//自绘卡片阴影。
+void messageBox::paintEvent(QPaintEvent *event) {
+    QWidget::paintEvent(event);
+
+    if (_card == nullptr) {
+        return;
+    }
+
+    const QRectF cardRect(_card->geometry());
+    QPainter painter(this);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setPen(Qt::NoPen);
+
+    //由内向外逐层扩大、透明度递减，近似原来的 18px 模糊阴影
+    for (int layer = kShadowLayers; layer >= 1; --layer) {
+        const qreal spread = layer * 2.0;
+        const QRectF shadowRect = cardRect.adjusted(-spread, -spread + kShadowOffsetY,
+                                                    spread, spread + kShadowOffsetY);
+        painter.setBrush(QColor(0, 0, 0, kShadowAlpha / (layer + 1)));
+        painter.drawRoundedRect(shadowRect, kCardRadius + spread, kCardRadius + spread);
     }
 }
 

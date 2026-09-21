@@ -1,5 +1,6 @@
 #include "mainWidget.h"
 #include <QScreen>
+#include <QVBoxLayout>
 #include "serverWidget.h"
 
 mainWidget::mainWidget(
@@ -12,13 +13,26 @@ mainWidget::mainWidget(
     this->setMinimumSize(800, 600);
 
     //TODO 发送界面绘制 astraclicker
-    message_input = new QPlainTextEdit(this);
-    button_send = new QPushButton(this);
-    button_send->setText("发送");
-    button_send->move(100, 100);
-    button_send->setFixedSize(200, 100);
-    button_send->show();
+    auto *rootLayout = new QVBoxLayout(this);
+    rootLayout->setContentsMargins(12, 12, 12, 12);
+    rootLayout->setSpacing(8);
 
+    _messageArea = new messageArea;
+    rootLayout->addWidget(_messageArea, 1);
+
+    auto *sendBar = new QHBoxLayout();
+    message_input = new QPlainTextEdit(this);
+    message_input->setPlaceholderText("输入消息…");
+    message_input->setMinimumHeight(60);
+    message_input->setMaximumHeight(120);
+
+    button_send = new QPushButton("发送", this);
+    button_send->setMinimumSize(96, 36);
+    button_send->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+
+    sendBar->addWidget(message_input, 1);
+    rootLayout->addWidget(button_send, 0, Qt::AlignBottom);
+    rootLayout->addLayout(sendBar, 0);
     //获取屏幕长宽
     const QScreen *current_screen = QGuiApplication::screenAt(QCursor::pos());
     if (current_screen == nullptr) {
@@ -141,7 +155,7 @@ void mainWidget::process_received_messages(chatClient &web_api) {
             const std::string text = data.value("text", std::string{});
 
             //TODO 聊天框 凯
-            messageBox::popup(this, "[" + sender + "]: " + text, messageBox::Type::Info);
+            _messageArea->addContent("[" + sender + "]: " += text);
             //TODO 写入聊天记录 凯
             continue;
         }
