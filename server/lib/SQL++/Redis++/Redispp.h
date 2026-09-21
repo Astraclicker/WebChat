@@ -40,12 +40,24 @@ namespace astra_sql {
         );
 
         /**
-         * @brief 读取字符串键
+         * @brief 读取键得到值
          * @param key 要读取的Redis键
          * @return 键存在时返回字符串,否则返回std::nullopt
          * @throw Redis连接或者命令异常
          */
         //使用这个类型来判断缓存是否命中
         std::optional<std::string> get_string(const std::string &key);
+
+        /**
+         * @brief 设置指定键的值和ttl
+         */
+        bool set_string(const std::string &key,
+            const std::string &value,
+            const std::chrono::seconds ttl );
+        
+        /**
+         * @brief 删除指定键,删除成功返回true
+         */
+        bool delete_key(const std::string &key);
     };
 }

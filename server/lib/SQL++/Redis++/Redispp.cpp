@@ -46,4 +46,17 @@ namespace astra_sql {
         }
         return *redis_value;
     }
+
+    bool Redispp::set_string(const std::string &key,
+    const std::string &value,
+    const std::chrono::seconds ttl)
+    {
+        return redis_client->set(key,value,ttl);
+    }
+
+    bool Redispp::delete_key(const std::string &key)
+    {
+        const long long deleted_count = redis_client->del(key);
+        return deleted_count > 0;
+    }
 }

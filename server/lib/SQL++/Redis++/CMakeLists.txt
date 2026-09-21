@@ -25,6 +25,7 @@ FetchContent_Declare(hiredis OVERRIDE_FIND_PACKAGE)
 FetchContent_MakeAvailable(hiredis)
 
 # redis-plus-plus 的 FindHiredis 需要这个变量指向包含 hiredis/ 头文件目录的父目录
+# 读取点存在,赋值点消失,现在在父文件夹下的cmakelists添加对应板块
 get_filename_component(hiredis_INCLUDE_DIRS ${Hiredis_DIR} DIRECTORY)
 
 add_subdirectory(${Redis_DIR} ${CMAKE_BINARY_DIR}/SQL++/redis-plus-plus)
