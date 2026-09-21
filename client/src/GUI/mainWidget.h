@@ -4,6 +4,7 @@
 #include <QPropertyAnimation>
 #include <QApplication>
 #include <QPlainTextEdit>
+#include <QTextEdit>
 #include <QTimer>
 #include "../Web/client.h"
 
@@ -29,6 +30,12 @@ protected:
     QTimer *request_timeout_timer;
     pending_request_type pending_request = pending_request_type::none;
 
+    //当前登录的用户名，用于定位该用户的聊天记录文件
+    std::string current_user;
+
+    //聊天记录显示区（只读，用于展示收到的消息）
+    QTextEdit *chat_display;
+
     //多行文本输入框
     QPlainTextEdit *message_input;
 
@@ -37,6 +44,9 @@ protected:
 
     //初始化信号与槽的连接
     void initConnect(chatClient &web_api);
+
+    //把一条聊天消息追加写入当前用户的本地记录文件
+    void append_chat_history(const std::string &sender, const std::string &text);
 
 public:
     //构造函数
