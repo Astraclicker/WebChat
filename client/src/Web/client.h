@@ -14,7 +14,7 @@ protected:
     boost::asio::streambuf readBuf;
 
     //保存发送的消息的队列
-    std::deque<std::string> writeMsgs;
+    std::deque<nlohmann::json> writeMsgs;
 
     // Asio 与 Qt 分属不同线程，接收队列通过互斥保护的接口访问。
     std::mutex requested_mutex;

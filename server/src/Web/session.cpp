@@ -21,9 +21,8 @@ session::session(tcp::socket socket, std::set<std::shared_ptr<session> > &sessio
     };
     const astra_sql::primaryKeyRule pk{"uid"};
     const astra_sql::uniqueKeyRule uk{"userName"};
-    mysqlAPI.mysqlCreateTable("users", createRule, &pk, &uk);
-
     mysqlAPI.switchDatabase("ChatServer");
+    mysqlAPI.mysqlCreateTable("users", createRule, &pk, &uk);
 }
 
 //启动接口
@@ -42,7 +41,9 @@ void session::broadCast(const std::string &msg, const std::string &receiver) con
     const std::string frame = out.dump() + "\n";
 
     for (auto &session: sessionSet) {
-        if (session->myUserName == receiver) {
+        //好友和群组功能作为拓展功能，目前不校验receiver，只排排除自己
+        //TODO 校验receiver(作为拓展功能)
+        if (session != this->shared_from_this()) {
             session->deliver(frame);
             std::cout << this->sessionSocker.remote_endpoint() << " send to ";
             std::cout << session->sessionSocker.remote_endpoint() << std::endl;

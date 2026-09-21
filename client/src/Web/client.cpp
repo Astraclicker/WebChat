@@ -1,14 +1,14 @@
 #include "client.h"
 #include "../SQLite/SQLite.h"
 #include <iostream>
+#include <memory>
 
 //构造函数
 chatClient::chatClient(
     boost::asio::io_context &io,
     const tcp::resolver::results_type &endpoints
 ) : io_(io), clientSocket(io) {
-    //TODO sqlite创表
-    testFunc();
+    //TODO sqlite创表 my
     Connect(endpoints);
 }
 
@@ -77,7 +77,7 @@ void chatClient::write(message &outgoing_message) {
 
     boost::asio::post(io_, [this, sendJson]() {
         const bool writeInProgress = !writeMsgs.empty();
-        writeMsgs.push_back(sendJson.dump() + '\n');
+        writeMsgs.push_back(sendJson);
         if (!writeInProgress) {
             doWrite();
         }
@@ -89,11 +89,13 @@ void chatClient::doWrite() {
     if (writeMsgs.empty()) {
         return;
     }
+
+    auto payload = std::make_shared<std::string>(writeMsgs.front().dump() + '\n');
     boost::asio::async_write(
         clientSocket,
-        boost::asio::buffer(writeMsgs.front().data(), writeMsgs.front().size()),
+        boost::asio::buffer(*payload),
         //写入完成调用回调函数,弹出第一条数据
-        [this](const boost::system::error_code &errorCode, std::size_t) {
+        [this, payload](const boost::system::error_code &errorCode, std::size_t) {
             if (!errorCode) {
                 writeMsgs.pop_front();
                 if (!writeMsgs.empty()) {
@@ -113,7 +115,7 @@ void chatClient::close() {
 }
 
 bool chatClient::try_pop_message(nlohmann::json &incoming_message) {
-    std::lock_guard<std::mutex> lock(requested_mutex);
+    std::lock_guard lock(requested_mutex);
     if (requested_messages.empty()) {
         return false;
     }

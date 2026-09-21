@@ -1,7 +1,5 @@
 #include "serverWidget.h"
 #include <QGraphicsDropShadowEffect>
-#include <QEvent>
-#include <QGuiApplication>
 #include <QPropertyAnimation>
 #include <QTimer>
 #include <QLabel>

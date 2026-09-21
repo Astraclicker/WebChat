@@ -11,7 +11,7 @@ mainWidget::mainWidget(
     this->setWindowTitle(title.c_str());
     this->setMinimumSize(800, 600);
 
-    //TODO 发送界面绘制
+    //TODO 发送界面绘制 astraclicker
     message_input = new QPlainTextEdit(this);
     button_send = new QPushButton(this);
     button_send->setText("发送");
@@ -74,7 +74,7 @@ void mainWidget::initConnect(chatClient &web_api) {
             return;
         }
 
-        // TODO 选择接收者
+        // TODO 选择接收者(作为拓展功能) astraclicker
         json_data["receiver"] = "root";
         json_data["text"] = text;
         message outgoing_message{.data = json_data.dump(), .type = message_type::text};
@@ -140,9 +140,9 @@ void mainWidget::process_received_messages(chatClient &web_api) {
             const std::string sender = data.value("sender", std::string{});
             const std::string text = data.value("text", std::string{});
 
-            //TODO 聊天框
+            //TODO 聊天框 凯
             messageBox::popup(this, "[" + sender + "]: " + text, messageBox::Type::Info);
-            //TODO 写入聊天记录
+            //TODO 写入聊天记录 凯
             continue;
         }
 
@@ -155,7 +155,7 @@ void mainWidget::process_received_messages(chatClient &web_api) {
                 _loginWidget,
                 success ? "登录成功" : "登录失败",
                 success ? messageBox::Type::Success : messageBox::Type::Error
-                //TODO 登录成功后读取本地json加载聊天记录
+                //TODO 登录成功后读取本地json加载聊天记录 astraclicker
             );
             if (success) {
                 show();
@@ -172,7 +172,7 @@ void mainWidget::process_received_messages(chatClient &web_api) {
                 _createUserWidget,
                 success ? "注册成功" : "注册失败：用户名已存在",
                 success ? messageBox::Type::Success : messageBox::Type::Error
-                //TODO 为新用户创建SQLite
+                //TODO 为新用户创建SQLite my
             );
             if (success) {
                 _createUserWidget->close();
