@@ -51,13 +51,13 @@ void testFunc1(string user,string pass) {
          sqliteDataType::Text});
 
 }
-void testFunc2(const string &user, const string &pass) {
+void testFunc2( string user, string pass) {
     db().sqliteUpdateItem(
         kTable,                 //表名
         {{"pass", pass}},                        // 要改的字段
         {{"username", "=", user, "AND"}});       // where 条件
 }
-nlohmann::json testFunc3(const string &user) {
+nlohmann::json testFunc3( string user) {
     return db().sqlitSearchItem(
         kTable,      //表名
         {"uid", "username", "pass"},             // 要查的内容，不能为空
