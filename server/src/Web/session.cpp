@@ -152,6 +152,28 @@ void session::handle_login(const std::string &login_user_name,const std::string 
 
 
 }
+void session::handle_create_user(const std::string &login_user_name,const std::string &password)
+{
+    if(!createUser(mysqlAPI,login_user_name,password,sessionSocker) == true)
+    {
+        return;
+    }
+
+    const std::string cache_key = "login_cache:" + login_user_name;
+    try
+    {
+        const bool cache_stored = redisAPI.set_string(cache_key,password,std::chrono::seconds(300));
+        if(!cache_stored)
+        {
+            std::cerr << "fail to store login cache when create user" << login_user_name << std::endl;
+        }
+    }
+    catch(std::exception &error)
+    {
+        std::cerr << "fail to store login cache when create user"
+        << error.what() << std::endl;
+    }
+}
 //从readBuffer中读取数据并调用广播函数
 void session::doRead() {
     auto self(shared_from_this());
@@ -180,7 +202,7 @@ void session::doRead() {
                         if (type == "loginRequested") {
                             handle_login( loginUserName, password);
                         } else {
-                            createUser(mysqlAPI, loginUserName, password, sessionSocker);
+                            handle_create_user(loginUserName,password);
                         }
                     }
                 } catch (const std::exception &error) {
