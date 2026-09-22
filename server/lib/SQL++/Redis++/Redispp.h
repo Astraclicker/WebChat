@@ -59,5 +59,11 @@ namespace astra_sql {
          * @brief 删除指定键,删除成功返回true
          */
         bool delete_key(const std::string &key);
+
+        /**
+         * @brief:为redis添加健康检查,服务器在redis可用的时候接收客户端
+         */
+        bool connect_check();
+
     };
 }

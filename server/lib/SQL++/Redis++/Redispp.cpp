@@ -59,4 +59,9 @@ namespace astra_sql {
         const long long deleted_count = redis_client->del(key);
         return deleted_count > 0;
     }
+
+    bool Redispp::connect_check()
+    {
+        return redis_client->ping() == "PONG";
+    }
 }

@@ -12,6 +12,10 @@ server::server(boost::asio::io_context &io, const short port) :
         0
     ),
     serverAcceptor(io, tcp::endpoint(tcp::v4(), port)) {
+        if(!redis_api.connect_check())
+        {
+            throw std::runtime_error("Redis connection failed");
+        }
         doAccept();
 }
 
