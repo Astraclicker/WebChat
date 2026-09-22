@@ -8,8 +8,18 @@
       "cStandard": "c17",
       "cppStandard": "c++20",
 
-      "compileCommands": ["${workspaceFolder}/client/build/compile_commands.json",
-      "${workspaceFolder}/server/build/compile_commands.json"]
+      "compileCommands": [
+  "${workspaceFolder}/client/build/compile_commands.json",
+  "${workspaceFolder}/server/build/compile_commands.json"
+],
+"includePath": [
+  "${workspaceFolder}/server/lib/SQL++/lib/redis-plus-plus/src",
+  "${workspaceFolder}/server/lib/SQL++/lib/redis-plus-plus/src/sw/redis++/no_tls",
+  "${workspaceFolder}/server/lib/SQL++/lib/redis-plus-plus/src/sw/redis++/cxx17",
+  "${workspaceFolder}/server/lib/SQL++/lib",
+  "${workspaceFolder}/server/lib/SQL++/lib/hiredis",
+  "${workspaceFolder}/client/build/SQL++/redis-plus-plus/src"
+]
     }
   ],
   "version": 4

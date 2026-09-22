@@ -39,7 +39,7 @@ void login(
 }
 
 //注册用户
-void createUser(
+bool createUser(
     astra_sql::MySQLpp &mysqlAPI,
     const std::string &loginUserName,
     const std::string &password,
@@ -84,4 +84,5 @@ void createUser(
         sessionSocker, boost::asio::buffer(*send_msg),
         [send_msg](const boost::system::error_code &, size_t) {
         });
+    return ok;
 }

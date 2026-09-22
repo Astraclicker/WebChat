@@ -21,4 +21,5 @@ target_link_libraries(
         PUBLIC
         Boost::asio
         MySQL
+        Redis++
 )
