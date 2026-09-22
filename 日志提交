@@ -1,0 +1,162 @@
+#pragma once
+
+
+#include <atomic>
+#include <chrono>
+#include <ctime>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <mutex>
+#include <sstream>
+#include <string>
+#include <utility>
+
+#ifdef _WIN32
+extern "C" int __stdcall SetConsoleOutputCP(unsigned int codePage);
+#endif
+
+namespace astra_log {
+
+    // ---------- 日志等级 ----------
+    enum class Level {
+        Debug,
+        Info,
+        Warn,
+        Error,
+    };
+
+    inline const char* levelName(const Level level) {
+        switch (level) {
+        case Level::Debug: return "DEBUG";
+        case Level::Info: return "INFO";
+        case Level::Warn: return "WARN";
+        case Level::Error: return "ERROR";
+        }
+        return "UNKNOWN";
+    }
+
+    namespace detail {
+
+        // 当前时间，形如 2026-09-21 14:03:22.123
+        inline std::string timeStamp() {
+            using namespace std::chrono;
+            const auto now = system_clock::now();
+            const auto ms = duration_cast<milliseconds>(now.time_since_epoch()) % 1000;
+            const std::time_t t = system_clock::to_time_t(now);
+
+            std::tm tmBuf{};
+#ifdef _WIN32
+            localtime_s(&tmBuf, &t);
+#else
+            localtime_r(&t, &tmBuf);
+#endif
+
+            std::ostringstream oss;
+            oss << std::put_time(&tmBuf, "%Y-%m-%d %H:%M:%S")
+                << '.' << std::setfill('0') << std::setw(3) << ms.count();
+            return oss.str();
+        }
+
+        // 日志器：单例，管着文件流、等级过滤和锁
+        class Logger {
+        public:
+            static Logger& instance() {
+                static Logger logger;
+                return logger;
+            }
+
+            void setFile(std::string path) {
+                std::lock_guard<std::mutex> lock(mutex_);
+                if (file_.is_open()) {
+                    file_.close();
+                }
+                filePath_ = std::move(path);
+                openFile();
+            }
+
+            void setMinLevel(const Level level) { minLevel_.store(level); }
+            void setConsoleEnabled(const bool enabled) { consoleEnabled_.store(enabled); }
+
+            void write(const Level level, const std::string& message) {
+                // 等级不够就先丢掉
+                if (level < minLevel_.load()) {
+                    return;
+                }
+
+                // 格式化：[2026-09-21 14:03:22.123] [INFO] 内容
+                std::ostringstream line;
+                line << '[' << timeStamp() << "] "
+                    << '[' << levelName(level) << "] "
+                    << message;
+
+                std::lock_guard<std::mutex> lock(mutex_);
+
+                if (file_.is_open()) {
+                    file_ << line.str() << '\n';
+                    file_.flush(); // 立刻落盘：程序崩了日志也不会丢
+                }
+
+                if (consoleEnabled_.load()) {
+                    std::cout << line.str() << std::endl;
+                }
+            }
+
+        private:
+            Logger() {
+#ifdef _WIN32
+                SetConsoleOutputCP(65001); // 控制台切 UTF-8
+#endif
+                openFile();
+            }
+
+            void openFile() {
+                file_.open(filePath_, std::ios::out | std::ios::app);
+                if (!file_.is_open()) {
+                    std::cerr << "[astra_log] 无法打开日志文件: " << filePath_ << std::endl;
+                }
+            }
+
+            std::string filePath_{ "server.log" };
+            std::ofstream file_;
+            std::atomic<Level> minLevel_{ Level::Debug };
+            std::atomic<bool> consoleEnabled_{ true };
+            std::mutex mutex_;
+        };
+
+    } // namespace detail
+
+    // ---------- 对外接口 ----------
+
+    // 写一条日志：内容 + 等级
+    inline void log(const std::string& message, const Level level) {
+        detail::Logger::instance().write(level, message);
+    }
+
+    // 换日志文件（默认 server.log，相对程序当前工作目录）
+    inline void setLogFile(const std::string& path) {
+        detail::Logger::instance().setFile(path);
+    }
+
+    // 低于这个等级的日志直接丢掉（默认 Debug，即全记）
+    inline void setMinLevel(const Level level) {
+        detail::Logger::instance().setMinLevel(level);
+    }
+
+    // 是否同时打印到控制台（默认 true）
+    inline void setConsoleEnabled(const bool enabled) {
+        detail::Logger::instance().setConsoleEnabled(enabled);
+    }
+
+    // 把任意几个值拼成一个字符串，给 log() 用
+    template<typename... Args>
+    std::string format(Args &&... args) {
+        std::ostringstream oss;
+        (oss << ... << args);
+        return oss.str();
+    }
+
+} // namespace astra_log
+
+// 拼接更方便的写法：LOG(astra_log::Level::Info, "用户 ", name, " 上线")
+#define LOG(level, ...) ::astra_log::log(::astra_log::format(__VA_ARGS__), level)
