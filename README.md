@@ -60,7 +60,9 @@ sudo apt install -y \
     libboost-dev \
     libmysqlcppconn-dev \
     mysql-server \
-    qt6-base-dev
+    qt6-base-dev \
+    redis-server \
+    redis-tools
 ```
 
 确认关键工具版本：
@@ -218,12 +220,41 @@ client/bin/Release/client
 
 打开第一个终端，进入仓库根目录：
 
+#### 使用systemctl启动redis服务器,redis健康检查 
 ```bash
-export WEBCHAT_DB_HOST='127.0.0.1'
-export WEBCHAT_DB_PORT='3306'
-export WEBCHAT_DB_USER='webchat'
-export WEBCHAT_DB_PASSWORD='webchat_dev_password'
-export WEBCHAT_DB_NAME='ChatServer'
+sudo systemctl enable --now redis-server
+redis cli ping
+```
+#### 若wsl2没有systemmd
+```bash
+sudo service redis-server start
+redis-cli ping
+```
+
+#### 运行服务器
+
+因为组长硬编码了,所以就不使用环境变量了
+
+```bash
+sudo mysql <<'SQL'
+CREATE DATABASE IF NOT EXISTS ChatServer
+    CHARACTER SET utf8mb4
+    COLLATE utf8mb4_unicode_ci;
+
+CREATE USER IF NOT EXISTS 'astraclicker'@'127.0.0.1'
+    IDENTIFIED WITH mysql_native_password BY '1108372699a@A';
+ALTER USER 'astraclicker'@'127.0.0.1'
+    IDENTIFIED WITH mysql_native_password BY '1108372699a@A';
+GRANT ALL PRIVILEGES ON ChatServer.* TO 'astraclicker'@'127.0.0.1';
+
+CREATE USER IF NOT EXISTS 'astraclicker'@'localhost'
+    IDENTIFIED WITH mysql_native_password BY '1108372699a@A';
+ALTER USER 'astraclicker'@'localhost'
+    IDENTIFIED WITH mysql_native_password BY '1108372699a@A';
+GRANT ALL PRIVILEGES ON ChatServer.* TO 'astraclicker'@'localhost';
+
+FLUSH PRIVILEGES;
+SQL
 
 ./server/bin/Release/server
 ```
