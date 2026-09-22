@@ -1,20 +1,21 @@
 #include <iostream>
 #include <Web/web.h>
+#include <fstream>
 
-int main()
-{
-    try
-    {
+int main(int argc, char *argv[]) {
+    try {
+        if (argv[1] == nullptr) {
+            throw std::runtime_error("must provide config file");
+        }
+        std::ifstream configFile(argv[1]);
+        nlohmann::json configJson = nlohmann::json::parse(configFile);
+
         boost::asio::io_context io;
-        
-        // 监听端口必须与客户端固定连接的 9191 一致，否则两端都启动却永远无法建立会话。
-        server chat_server(io, 9191);
+        server chat_server(io, configJson);
         std::cout << "Chat server started on port 9191" << std::endl;
         io.run();
-    }
-    catch (std::exception &error)
-    {
-        std::cerr << "Exception: " << error.what() << std::endl;
+    } catch (std::exception &error) {
+        std::cerr << "error: " << error.what() << std::endl;
         return 1;
     }
     return 0;
