@@ -21,8 +21,8 @@ session::session(
       redisAPI(
           redisConfig["address"],
           redisConfig["port"],
-          nullptr,
-          &redisConfig["password"].get_ref<const std::string &>(),
+          redisConfig["userName"],
+          redisConfig["password"],
           0
       ),
       sessionSocker(std::move(socket)),

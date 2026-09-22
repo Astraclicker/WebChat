@@ -4,8 +4,8 @@ namespace astra_sql {
     Redispp::Redispp(
         const std::string &hostName,
         const int port,
-        const std::string *userName,
-        const std::string *password,
+        const std::string &userName,
+        const std::string &password,
         const int db
     ) {
         // opts = new sw::redis::ConnectionOptions;
@@ -14,11 +14,11 @@ namespace astra_sql {
         sw::redis::ConnectionOptions connection_options;
         connection_options.host = hostName;
         connection_options.port = port;
-        if (userName != nullptr) {
-            connection_options.user = *userName;
+        if (!userName.empty()) {
+            connection_options.user = userName;
         }
-        if (password != nullptr) {
-            connection_options.password = *password;
+        if (!userName.empty()) {
+            connection_options.password = password;
         }
         connection_options.db = db;
 

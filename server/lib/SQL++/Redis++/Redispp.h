@@ -34,8 +34,8 @@ namespace astra_sql {
         Redispp(
             const std::string &hostName,
             int port,
-            const std::string *userName,
-            const std::string *password,
+            const std::string &userName,
+            const std::string &password,
             int db
         );
 
