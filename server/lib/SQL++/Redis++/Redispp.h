@@ -65,5 +65,10 @@ namespace astra_sql {
          */
         bool connect_check();
 
+        /**
+         * @brief 刷新已有键的生存时间
+         */
+        bool expire_key(const std::string &key,std::chrono::seconds ttl);
+
     };
 }

@@ -64,4 +64,8 @@ namespace astra_sql {
     {
         return redis_client->ping() == "PONG";
     }
+    bool Redispp::expire_key(const std::string &key,std::chrono::seconds ttl)
+    {
+        return redis_client->expire(key,ttl);
+    }
 }

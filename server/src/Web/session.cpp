@@ -88,6 +88,16 @@ void session::handle_login(const std::string &login_user_name,const std::string 
         const auto cached_password = redisAPI.get_string(cache_key);
         if(cached_password && *cached_password == password)
         {
+
+            //缓存命中在更新myUserName之前先更新生存时间
+            //这里需要用ttl_refreshed稳稳接住,因为这次操作之前可能就过期了
+            //expire的操作可能无法完成,所以我们要记录
+            bool ttl_refreshed = this->redisAPI.expire_key(cache_key,std::chrono::seconds(300));
+            if(!ttl_refreshed)
+            {
+                std::cerr << "login cache expired before TTL refresh: "
+                << login_user_name << std::endl;
+            }
             this->myUserName = login_user_name;
 
             nlohmann::json response;
