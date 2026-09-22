@@ -23,6 +23,8 @@ protected:
     std::deque<std::string> sendMsgs;
     //维护会话集合(此处为server类中sessionSet的引用)
     std::set<std::shared_ptr<session> > &sessionSet;
+    //不继续添加login的逻辑了,这个函数在原本login的基础上引入redis
+    void handle_login(const std::string &login_user_name,const std::string &password);
 
     //将要发送的消息队列异步写入socket
     void doWrite();
