@@ -209,10 +209,36 @@ messageArea::messageArea() {
     contentLayout->setSpacing(6);
 }
 
-void messageArea::addContent(const std::string &text) {
+void messageArea::addContent(const std::string &text, userType type) {
     auto *label = new QLabel(QString::fromStdString(text), content);
     label->setWordWrap(true);
-    contentLayout->addWidget(label);
+
+    //按消息来源区分气泡样式
+    if (type == userType::currentUser) {
+        //自己发的：主色底 + 白字
+        label->setStyleSheet("QLabel { background-color: #3498db; color: white;"
+                             " border-radius: 8px; padding: 6px 10px; }");
+    } else {
+        //别人发的：浅底 + 深字 + 描边
+        label->setStyleSheet("QLabel { background-color: #f0f2f5; color: #333;"
+                             " border: 1px solid #d0d7de; border-radius: 8px; padding: 6px 10px; }");
+    }
+
+    //长消息的换行宽度上限：不超过视口的 3/4，否则气泡会把整行撑满，就不像气泡了
+    label->setMaximumWidth(qMax(200, viewport()->width() * 3 / 4));
+
+    //气泡靠左/靠右：外面套一层 QHBoxLayout，用弹性空白把气泡顶到对应一侧
+    auto *row = new QHBoxLayout();
+    row->setContentsMargins(0, 0, 0, 0);
+    if (type == userType::currentUser) {
+        row->addStretch(1); //自己发的：左边留白，气泡贴右
+        row->addWidget(label, 0);
+    } else {
+        row->addWidget(label, 0); //别人发的：气泡贴左，右边留白
+        row->addStretch(1);
+    }
+
+    contentLayout->addLayout(row);
 }
 
 namespace {

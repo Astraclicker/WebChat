@@ -259,8 +259,13 @@ protected:
     QVBoxLayout *contentLayout;
 
 public:
+    enum class userType {
+        currentUser,
+        otherUser
+    };
+
     messageArea();
 
     //添加内容
-    void addContent(const std::string &text);
+    void addContent(const std::string &text,userType type);
 };

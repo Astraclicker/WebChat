@@ -42,7 +42,7 @@ protected:
     void initConnect(chatClient &web_api);
 
     //把一条聊天消息追加写入当前用户的本地记录文件
-    void append_chat_history(const std::string &sender, const std::string &text);
+    void append_chat_history(const std::string &sender, const std::string &text) const;
 
 public:
     //构造函数

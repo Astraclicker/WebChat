@@ -3,7 +3,7 @@
 #include <QVBoxLayout>
 #include "serverWidget.h"
 #include <fstream>
-#include <cstdlib>
+#include <iostream>
 #include <filesystem>
 
 mainWidget::mainWidget(
@@ -15,7 +15,6 @@ mainWidget::mainWidget(
     this->setWindowTitle(title.c_str());
     this->setMinimumSize(800, 600);
 
-    //TODO 发送界面绘制 astraclicker
     auto *rootLayout = new QVBoxLayout(this);
     rootLayout->setContentsMargins(12, 12, 12, 12);
     rootLayout->setSpacing(8);
@@ -91,9 +90,17 @@ void mainWidget::initConnect(chatClient &web_api) {
             return;
         }
 
-        // TODO 选择接收者(作为拓展功能) astraclicker
+        // TODO 选择接收者(作为拓展功能)
         json_data["receiver"] = "root";
         json_data["text"] = text;
+        _messageArea->addContent("[" + current_user + "]: " + text, messageArea::userType::currentUser);
+
+        try {
+            append_chat_history(current_user, text);
+        } catch (std::exception &error) {
+            std::cerr << error.what() << std::endl;
+        }
+
         message outgoing_message{.data = json_data.dump(), .type = message_type::text};
         web_api.write(outgoing_message);
         message_input->clear();
@@ -143,32 +150,58 @@ void mainWidget::initConnect(chatClient &web_api) {
 
     //设置轮询检查接收队列
     connect(message_poll_timer, &QTimer::timeout, this, [&web_api, this]() {
-        process_received_messages(web_api);
+        try {
+            process_received_messages(web_api);
+        } catch (const std::exception &error) {
+            std::cerr << "process message failed: " << error.what() << std::endl;
+        }
     });
 }
 
 //把一条聊天消息追加写入当前用户的本地记录文件
-void mainWidget::append_chat_history(const std::string &sender, const std::string &text) {
+void mainWidget::append_chat_history(const std::string &sender, const std::string &text) const {
     //没登录就不记录，避免写到莫名其妙的地方
     if (current_user.empty()) {
         return;
     }
 
-    //组装要存储的内容（和网络协议一样用 JSON）
-    nlohmann::json record;
-    record["sender"] = sender;
-    record["text"] = text;
+    //组装要存储的内容
+    nlohmann::json item;
+    item["sender"] = sender;
+    item["text"] = text;
 
-    //拼出目标路径： $HOME/talk_history/<用户名>.jsonl
-    const std::filesystem::path dir =
-        std::filesystem::path(std::getenv("HOME")) / "talk_history";
-    std::filesystem::create_directories(dir);
+    const auto dir = std::filesystem::u8path("talk_history");
+    const auto file = dir / std::filesystem::u8path(current_user + ".json");
 
-    const std::filesystem::path file = dir / (current_user + ".jsonl");
+    std::ifstream inChatFile(file);
+    if (!inChatFile) {
+        std::error_code ec;
+        std::filesystem::create_directories(dir, ec);
+        std::ofstream tempFile(file);
+        tempFile << "[]";
+        tempFile.close();
+        if (ec) {
+            std::cerr << "create talk_history failed: " << ec.message() << std::endl;
+            return;
+        }
+    }
 
-    //追加写入（app 模式保证不覆盖已有内容）
-    std::ofstream out(file, std::ios::app);
-    out << record.dump() << '\n';
+    //将目标文件写到内存中的json数组
+    nlohmann::json array = nlohmann::json::array();
+    try {
+        inChatFile >> array;
+        inChatFile.close();
+    } catch (std::exception &error) {
+        std::cerr << error.what() << std::endl;
+    }
+
+    //向数组中追加数据
+    array.push_back(item);
+
+    //回写数据
+    std::ofstream outChatFile(file);
+    outChatFile << array;
+    outChatFile.close();
 }
 
 //检查接收队列并打印消息
@@ -181,9 +214,8 @@ void mainWidget::process_received_messages(chatClient &web_api) {
             const std::string sender = data.value("sender", std::string{});
             const std::string text = data.value("text", std::string{});
 
-            //TODO 聊天框 凯
-            _messageArea->addContent("[" + sender + "]: " += text);
-            //写入聊天记录 凯
+            _messageArea->addContent("[" + sender + "]: " += text, messageArea::userType::otherUser);
+            //写入聊天记录到本地json
             append_chat_history(sender, text);
             continue;
         }
@@ -194,13 +226,49 @@ void mainWidget::process_received_messages(chatClient &web_api) {
             pending_request = pending_request_type::none;
             const bool success = data == "success";
             messageBox::popup(
-                _loginWidget,
+                nullptr,
                 success ? "登录成功" : "登录失败",
                 success ? messageBox::Type::Success : messageBox::Type::Error
-                //TODO 登录成功后读取本地json加载聊天记录 astraclicker
             );
             if (success) {
                 current_user = _loginWidget->getUserName();
+                //读取本地聊天记录
+                const auto dir = std::filesystem::u8path("talk_history");
+                const auto file = dir / std::filesystem::u8path(current_user + ".json");
+                std::ifstream chatFile(file);
+                if (!chatFile) {
+                    std::error_code ec;
+                    std::filesystem::create_directories(dir, ec);
+                    std::ofstream tempFile(file);
+                    tempFile << "[]";
+                    tempFile.close();
+                    if (ec) {
+                        std::cerr << "create talk_history failed: " << ec.message() << std::endl;
+                        return;
+                    }
+                }
+
+                nlohmann::json array = nlohmann::json::array();
+
+                try {
+                    chatFile >> array;
+                } catch (std::exception &error) {
+                    std::cerr << error.what() << std::endl;
+                }
+
+                for (const auto &item: array) {
+                    auto sender = item.value("sender", std::string{});
+                    if (sender == current_user) {
+                        _messageArea->addContent(
+                            "[" + sender + "]: " += item.value("text", std::string{}),
+                            messageArea::userType::currentUser);
+                    } else {
+                        _messageArea->addContent(
+                            "[" + sender + "]: " += item.value("text", std::string{}),
+                            messageArea::userType::otherUser);
+                    }
+                }
+                std::clog << "chatFile load success" << std::endl;
                 show();
                 _loginWidget->close();
             }
