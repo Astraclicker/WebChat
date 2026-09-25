@@ -36,6 +36,22 @@ session::session(
     const astra_sql::uniqueKeyRule uk{"userName"};
     mysqlAPI.switchDatabase("ChatServer");
     mysqlAPI.mysqlCreateTable("users", createRule, &pk, &uk);
+
+    //聊天记录表:只建一次,CREATE TABLE IF NOT EXISTS是幂等的,每个连接重复执行无副作用
+    //text用TEXT而不是varchar:客户端输入框和本地记录都没有长度上限,
+    //用varchar会让超长消息插入失败被丢掉,sender/receiver对齐users.userName的varchar(50)
+    auto createChatRule = std::vector<astra_sql::createTableRule>{
+        {"uid", "int", "not null auto_increment"},
+        {"sender", "varchar(50)", "not null"},
+        {"receiver", "varchar(50)", "not null"},
+        {"text", "TEXT", "not null"},
+        {"sendTime", "datetime", "not null"}
+    };
+    const astra_sql::primaryKeyRule chatPk{"uid"};
+    const auto chatResult = mysqlAPI.mysqlCreateTable("chat_history", createChatRule, &chatPk, nullptr);
+    if (chatResult != astra_sql::SQLppError::success) {
+        std::cerr << "create table chat_history failed" << std::endl;
+    }
 }
 
 //启动接口
@@ -189,6 +205,20 @@ void session::doRead() {
                     if (type == "text") {
                         const auto receiver = data.value("receiver", std::string{});
                         const auto text = data.value("text", std::string{});
+
+                        //未登录的会话没有身份可记,不写库,避免产生sender为空的垃圾记录
+                        //存库失败不能影响聊天:消息照常广播,只把错误记进日志
+                        if (!myUserName.empty()) {
+                            try {
+                                if (!saveChatHistory(mysqlAPI, myUserName, receiver, text)) {
+                                    std::cerr << "save chat history failed: "
+                                            << myUserName << " -> " << receiver << std::endl;
+                                }
+                            } catch (const std::exception &error) {
+                                std::cerr << "save chat history error: " << error.what() << std::endl;
+                            }
+                        }
+
                         broadCast(text, receiver);
                     } else {
                         const auto loginUserName = data.value("userName", std::string{});

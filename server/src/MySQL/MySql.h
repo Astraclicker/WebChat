@@ -11,3 +11,8 @@ void login(astra_sql::MySQLpp &mysqlAPI, const std::string &loginUserName, const
 //因为没有auth_user_name参数的存在来判断是否成功,重构一下,否则redis逻辑不好写
 bool createUser(astra_sql::MySQLpp &mysqlAPI, const std::string &loginUserName, const std::string &password,
                 tcp::socket &sessionSocker);
+
+//保存一条聊天记录到chat_history,写入成功返回true
+//时间戳由服务端生成,不接受客户端传入
+bool saveChatHistory(astra_sql::MySQLpp &mysqlAPI, const std::string &sender, const std::string &receiver,
+                     const std::string &text);

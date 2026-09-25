@@ -7,9 +7,11 @@ Qt 客户端
     │ TCP 127.0.0.1:9191
     ▼
 聊天服务端
-    │ MySQL Connector/C++
-    ▼
-MySQL 127.0.0.1:3306 / ChatServer.users
+    ├─ MySQL Connector/C++ ──→ MySQL 127.0.0.1:3306
+    │                            ├─ ChatServer.users        账号
+    │                            └─ ChatServer.chat_history 聊天记录
+    └─ Redis++ ──────────────→ Redis 127.0.0.1:6379
+                                 └─ login_cache:<用户名>    登录缓存
 ```
 
 本文档的 Ubuntu/WSL2 流程已在以下环境完成“干净配置、编译、启动、协议层注册与登录”验证：
@@ -182,6 +184,11 @@ CREATE TABLE IF NOT EXISTS ChatServer.users
 SQL
 ```
 
+只需保证 `ChatServer` 这个库存在。`users`（账号）和 `chat_history`（聊天记录）两张表都由服务端在客户端连接时用
+`create table if not exists` 自动建立，这里手写 `CREATE TABLE` 只是为了让库一开始就可见；如果不写，服务端首次接受连接时也会补上。
+
+`chat_history` 没有出现在上面的 SQL 里，它完全由服务端代码维护，定义在 `session::session()` 中。
+
 ### 5. 编译服务端
 
 在仓库根目录执行：
@@ -255,17 +262,45 @@ GRANT ALL PRIVILEGES ON ChatServer.* TO 'astraclicker'@'localhost';
 
 FLUSH PRIVILEGES;
 SQL
-
-./server/bin/Release/server
 ```
+
+服务端**必须传入配置文件路径**（`server/main.cpp` 会检查 `argv[1]`，不传会直接抛 `must provide config file`）。
+
+```bash
+cat > server/config.json <<'JSON'
+{
+  "Web": { "port": 9191 },
+  "MySQL": {
+    "address": "127.0.0.1",
+    "port": 3306,
+    "userName": "astraclicker",
+    "password": "把上面 CREATE USER 里设的密码填在这里"
+  },
+  "Redis": {
+    "address": "127.0.0.1",
+    "port": 6379,
+    "userName": "",
+    "password": ""
+  }
+}
+JSON
+
+./server/bin/Release/server server/config.json
+```
+
+`userName` / `password` 要和上面 `CREATE USER` 建立的那个 MySQL 账号一致，否则服务端会在建立连接时报
+`Access denied`。**这个文件里是明文密码，不要提交到仓库**（已加进 `.gitignore`）。
+
+`Web.port` 和 `MySQL.port` 必须是**数字**，不能写成 `"9191"`：服务端用 `config["Web"]["port"]` 直接构造
+`tcp::endpoint`，JSON 字符串无法隐式转成整数。
+本机 Redis 没有设密码，所以 `Redis.userName` 和 `Redis.password` 留空即可；`Redispp` 只有在 `userName`
+非空时才会执行 `AUTH`。
 
 看到下面这行表示服务端已经监听成功：
 
 ```text
 Chat server started on port 9191
 ```
-
-这些环境变量只对当前终端有效，关闭终端后不会污染系统配置。
 
 ### 8. 启动客户端
 
@@ -284,6 +319,33 @@ printf '%s\n' "$DISPLAY"
 ```
 
 若输出为空，说明当前 WSL 没有可用的图形显示环境；请启用 WSLg，或在原生 Linux 桌面环境运行客户端。
+
+### 9. 验证聊天记录已落库
+
+服务端收到 `text` 消息时，除了广播给其他会话，还会把这条记录写进 `ChatServer.chat_history`。
+
+表结构（由服务端自动创建）：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `uid` | `int` | 主键，自增 |
+| `sender` | `varchar(50)` | 发送方，取自服务端会话里登录成功后的用户名，**不由客户端传入** |
+| `receiver` | `varchar(50)` | 接收方，来自客户端消息体的 `receiver` |
+| `text` | `text` | 消息正文 |
+| `sendTime` | `datetime` | **服务端**写库时生成的时间戳，不接受客户端传入 |
+
+在客户端界面里发几条消息，然后直接查库（**命令写成一行，不要用反斜杠断开**：反斜杠后面
+一旦多出空格，续行就会失效，命令被拆成两条，报错信息会指向 `-e: not found` 这种完全无关的地方）：
+
+```bash
+mysql -h 127.0.0.1 -u astraclicker -p ChatServer -e "select uid,sender,receiver,text,sendTime from chat_history order by uid;"
+```
+
+回车后会提示 `Enter password:`，**输入时屏幕上一个字符都不会显示，这是正常的**，打完直接回车。
+
+预期能看到刚发出的消息，且 `sendTime` 是当前时间。
+
+`sendTime` 由服务端生成而不是由客户端传入，是因为客户端时钟不可信，记录的落地时间不该由发送方决定。
 
 ## 常见问题
 
@@ -372,3 +434,23 @@ cmake --build client/build --parallel
 - 当前地址和聊天端口固定为 `127.0.0.1:9191`，只适合本机测试。
 - 当前登录密码按明文保存，仅用于理解客户端、异步网络和数据库调用链。
 - 本 README 的完整流程验证目标是 Ubuntu 24.04/WSL2；Windows 构建尚未纳入本轮验证。
+
+聊天记录落库部分的已知边界：
+
+- **只写不读**。本轮只把消息写入 `chat_history`，还没有查询接口；客户端 `talk_history/<用户名>.json`
+  仍是独立的本地记录，两者目前互不影响。
+- **落库失败不影响聊天**。写库异常会被捕获并记进服务端日志（`save chat history failed`），
+  消息照常广播，连接也不会断，服务端也不会崩。已知会触发的场景：消息正文超过 65535 字节
+  （`Data too long for column 'text'`）、`receiver` 超过 50 字符、表被删掉、MySQL 连接中断。
+- **MySQL 连接断了不会自动重连**。每个会话在建立时创建一个 MySQL 连接并一直用；如果连接中途断掉
+  （数据库重启、超时），该会话之后的消息都写不进去，重启客户端重连才能恢复。这是服务端现有的
+  连接管理方式，登录和注册走的是同一条路。
+- **表在客户端连接时创建**。建表语句写在 `session::session()` 里，所以如果运行期间表被外部删掉，
+  要等下一个新连接才会重建。
+- **未登录的会话不写库**。`sender` 取自会话登录后的用户名；未登录就发 `text` 的会话没有身份可记，
+  会跳过写库，避免产生 `sender` 为空的记录。
+- **`receiver` 只是原样记录，不参与投递**。服务端目前把消息广播给除自己外的**所有**会话，不看
+  `receiver`；客户端也固定发 `root`（`mainWidget.cpp` 里标了 `TODO 选择接收者`）。
+  所以查库时**不要假设 `receiver` 就是实际收件人**。空字符串的正文也照原样入库，不做校验。
+- **没有 `(sender, receiver)` 索引**。`SQL++` 的 `mysqlCreateTable` 只支持主键和唯一键，
+  加不了普通索引；将来做「拉取某人聊天记录」时需要先扩展这个接口。
