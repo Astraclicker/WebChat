@@ -20,3 +20,5 @@ server/config.json
 config.json
 
 AGENTS.md
+
+*.db
