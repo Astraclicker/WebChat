@@ -1,4 +1,3 @@
-
 #include "SQLitepp.h"
 #include <iostream>
 #include <stdexcept>
@@ -16,6 +15,26 @@ namespace astra_sql {
             return;
         }
         std::clog << "SQLite connect successfully" << std::endl;
+    }
+
+    //查询表是否存在
+    bool SQLitepp::sqliteTableExists(const std::string &tableName) {
+        cmd = "SELECT count(*) FROM sqlite_master "
+                "WHERE type='table' AND name=? COLLATE NOCASE;";
+        sqlite3_prepare_v2(db, cmd.c_str(), -1, &stmt, nullptr);
+        sqlite3_bind_text(stmt, 1, tableName.c_str(), -1,SQLITE_STATIC);
+
+        try {
+            checkError = sqlite3_step(stmt);
+            if (checkError != SQLITE_ROW) {
+                throw std::runtime_error("select failed");
+            }
+            return sqlite3_column_int(stmt, 0) > 0;
+        } catch (std::exception &error) {
+            std::cerr << error.what() << std::endl << sqlite3_errmsg(db) << std::endl;
+            cmd.clear();
+            return false;
+        }
     }
 
     //创建表

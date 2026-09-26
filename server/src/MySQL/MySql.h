@@ -14,5 +14,7 @@ bool createUser(astra_sql::MySQLpp &mysqlAPI, const std::string &loginUserName, 
 
 //保存一条聊天记录到chat_history,写入成功返回true
 //时间戳由服务端生成,不接受客户端传入
-bool saveChatHistory(astra_sql::MySQLpp &mysqlAPI, const std::string &sender, const std::string &receiver,
-                     const std::string &text);
+bool saveChatHistory(astra_sql::MySQLpp &mysqlAPI, const std::string &sender, const std::string &text);
+
+//TODO创建用于存储聊天记录的表(每个用户一张)
+void createChatHistoryTable(astra_sql::MySQLpp &mysqlAPI, const std::string &userName);

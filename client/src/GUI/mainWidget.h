@@ -6,6 +6,7 @@
 #include <QPlainTextEdit>
 #include <QTimer>
 #include "../Web/client.h"
+#include <SQLite++/SQLitepp.h>
 
 
 class mainWidget : public QWidget {
@@ -17,6 +18,9 @@ protected:
         login,
         createUser
     };
+
+    //存储聊天记录的SQLite数据库
+    astra_sql::SQLitepp *chatHistory;
 
     //屏幕长宽
     int screenW;
@@ -42,7 +46,7 @@ protected:
     void initConnect(chatClient &web_api);
 
     //把一条聊天消息追加写入当前用户的本地记录文件
-    void append_chat_history(const std::string &sender, const std::string &text) const;
+    void appendChatHistory(const std::string &sender, const std::string &text) const;
 
 public:
     //构造函数

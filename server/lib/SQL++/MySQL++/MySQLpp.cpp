@@ -19,6 +19,22 @@ namespace astra_sql {
         std::clog << "MySQL connect successfully" << std::endl;
     }
 
+    //查询是否存在表
+    bool MySQLpp::mysqlTableExists(const std::string &tableName) {
+        cmd = "SHOW TABLES LIKE '" + tableName + "'";
+
+        try {
+            const std::string query = "SHOW TABLES LIKE '" + tableName + "'";
+            std::unique_ptr<sql::ResultSet> res(stmt->executeQuery(query));
+            return res->next();
+            cmd.clear();
+        } catch (const std::exception &e) {
+            cmd.clear();
+            std::cerr << e.what() << '\n';
+            return false;
+        }
+    }
+
     // 创建表
     SQLppError MySQLpp::mysqlCreateTable(
         const std::string &tableName,

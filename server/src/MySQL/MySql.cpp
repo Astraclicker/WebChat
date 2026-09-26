@@ -1,10 +1,7 @@
 #include "MySql.h"
 #include <chrono>
-#include <ctime>
-#include <iomanip>
 #include <iostream>
 #include <memory>
-#include <sstream>
 #include <vector>
 
 //登录
@@ -47,19 +44,15 @@ bool createUser(
     astra_sql::MySQLpp &mysqlAPI,
     const std::string &loginUserName,
     const std::string &password,
-    tcp::socket &sessionSocker)
-{
+    tcp::socket &sessionSocker) {
     nlohmann::json back;
     back["type"] = "mysqlCreateUserFeedBack";
 
     bool ok = false;
-    if (loginUserName.empty() || password.empty())
-    {
+    if (loginUserName.empty() || password.empty()) {
         // 协议请求必须有且仅有一次响应；校验失败也不能直接返回让客户端一直等待。
         std::cout << "createUser failed: empty userName or password" << std::endl;
-    }
-    else
-    {
+    } else {
         const astra_sql::item userData{
             {"userName", loginUserName},
             {"password", password}
@@ -72,12 +65,9 @@ bool createUser(
         ok = result == astra_sql::SQLppError::success;
     }
 
-    if (ok)
-    {
+    if (ok) {
         back["data"] = "success";
-    }
-    else
-    {
+    } else {
         back["data"] = "failed";
     }
 
@@ -95,39 +85,17 @@ bool createUser(
 bool saveChatHistory(
     astra_sql::MySQLpp &mysqlAPI,
     const std::string &sender,
-    const std::string &receiver,
     const std::string &text
 ) {
-    //时间戳由服务端生成:客户端时钟不可信,记录的落地时间不该由发送方决定
-    const std::time_t nowTime = std::chrono::system_clock::to_time_t(
-        std::chrono::system_clock::now()
-    );
-    //两个平台函数名、参数顺序、返回值含义都不同:localtime_r是(时间,结构)返回空指针,
-    //MSVC的localtime_s是(结构,时间)返回非0,写反了会踩坏栈。localTime值初始化防读到垃圾
-    std::tm localTime{};
-#if defined(_WIN32)
-    if (localtime_s(&localTime, &nowTime) != 0) {
-        std::cerr << "localtime_s failed" << std::endl;
-        return false;
-    }
-#else
-    //用_r版本:localtime返回静态缓冲区,不能用于多线程io_context
-    if (localtime_r(&nowTime, &localTime) == nullptr) {
-        std::cerr << "localtime_r failed" << std::endl;
-        return false;
-    }
-#endif
-    std::ostringstream timeStream;
-    timeStream << std::put_time(&localTime, "%Y-%m-%d %H:%M:%S");
+    //获取时间戳
+    const std::string currentTime = std::format("{:%Y-%m-%d %H:%M:%S}", std::chrono::system_clock::now());
 
     const astra_sql::item chatData{
         {"sender", sender},
-        {"receiver", receiver},
         {"text", text},
-        {"sendTime", timeStream.str()}
+        {"sendTime", currentTime.c_str()}
     };
     const astra_sql::mysqlItemType chatType{
-        astra_sql::mysqlDataType::String,
         astra_sql::mysqlDataType::String,
         astra_sql::mysqlDataType::String,
         //DataTime对应setDateTime,接受"YYYY-MM-DD HH:MM:SS"格式的字符串
@@ -136,4 +104,8 @@ bool saveChatHistory(
 
     const auto result = mysqlAPI.addItem("chat_history", chatData, chatType);
     return result == astra_sql::SQLppError::success;
+}
+
+//TODO创建用于存储聊天记录的表(每个用户一张)
+void createChatHistoryTable(astra_sql::MySQLpp &mysqlAPI, const std::string &userName) {
 }

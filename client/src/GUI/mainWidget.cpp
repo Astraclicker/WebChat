@@ -10,11 +10,12 @@ mainWidget::mainWidget(
     QWidget *parent,
     const std::string &title,
     chatClient &web_api
-) : QWidget(parent) {
+) : QWidget(parent), chatHistory(nullptr) {
     //mainWidget 窗口设置
     this->setWindowTitle(title.c_str());
     this->setMinimumSize(800, 600);
 
+    //消息发送及显示GUI
     auto *rootLayout = new QVBoxLayout(this);
     rootLayout->setContentsMargins(12, 12, 12, 12);
     rootLayout->setSpacing(8);
@@ -96,7 +97,7 @@ void mainWidget::initConnect(chatClient &web_api) {
         _messageArea->addContent("[" + current_user + "]: " + text, messageArea::userType::currentUser);
 
         try {
-            append_chat_history(current_user, text);
+            //TODO 将聊天记录写入本地SQLite
         } catch (std::exception &error) {
             std::cerr << error.what() << std::endl;
         }
@@ -158,50 +159,9 @@ void mainWidget::initConnect(chatClient &web_api) {
     });
 }
 
-//把一条聊天消息追加写入当前用户的本地记录文件
-void mainWidget::append_chat_history(const std::string &sender, const std::string &text) const {
-    //没登录就不记录，避免写到莫名其妙的地方
-    if (current_user.empty()) {
-        return;
-    }
+//TODO 写入聊天记录到SQLite
+void mainWidget::appendChatHistory(const std::string &sender, const std::string &text) const {
 
-    //组装要存储的内容
-    nlohmann::json item;
-    item["sender"] = sender;
-    item["text"] = text;
-
-    const auto dir = std::filesystem::u8path("talk_history");
-    const auto file = dir / std::filesystem::u8path(current_user + ".json");
-
-    std::ifstream inChatFile(file);
-    if (!inChatFile) {
-        std::error_code ec;
-        std::filesystem::create_directories(dir, ec);
-        std::ofstream tempFile(file);
-        tempFile << "[]";
-        tempFile.close();
-        if (ec) {
-            std::cerr << "create talk_history failed: " << ec.message() << std::endl;
-            return;
-        }
-    }
-
-    //将目标文件写到内存中的json数组
-    nlohmann::json array = nlohmann::json::array();
-    try {
-        inChatFile >> array;
-        inChatFile.close();
-    } catch (std::exception &error) {
-        std::cerr << error.what() << std::endl;
-    }
-
-    //向数组中追加数据
-    array.push_back(item);
-
-    //回写数据
-    std::ofstream outChatFile(file);
-    outChatFile << array;
-    outChatFile.close();
 }
 
 //检查接收队列并打印消息
@@ -215,8 +175,7 @@ void mainWidget::process_received_messages(chatClient &web_api) {
             const std::string text = data.value("text", std::string{});
 
             _messageArea->addContent("[" + sender + "]: " += text, messageArea::userType::otherUser);
-            //写入聊天记录到本地json
-            append_chat_history(sender, text);
+            //TODO写入聊天记录到本地SQLite
             continue;
         }
 
@@ -232,43 +191,12 @@ void mainWidget::process_received_messages(chatClient &web_api) {
             );
             if (success) {
                 current_user = _loginWidget->getUserName();
-                //读取本地聊天记录
-                const auto dir = std::filesystem::u8path("talk_history");
-                const auto file = dir / std::filesystem::u8path(current_user + ".json");
-                std::ifstream chatFile(file);
-                if (!chatFile) {
-                    std::error_code ec;
-                    std::filesystem::create_directories(dir, ec);
-                    std::ofstream tempFile(file);
-                    tempFile << "[]";
-                    tempFile.close();
-                    if (ec) {
-                        std::cerr << "create talk_history failed: " << ec.message() << std::endl;
-                        return;
-                    }
-                }
+                //创建聊天记录数据库
+                chatHistory = new astra_sql::SQLitepp(current_user + ".db", true);
+                
+                //TODO 创建存储聊天记录的表结构
 
-                nlohmann::json array = nlohmann::json::array();
-
-                try {
-                    chatFile >> array;
-                } catch (std::exception &error) {
-                    std::cerr << error.what() << std::endl;
-                }
-
-                for (const auto &item: array) {
-                    auto sender = item.value("sender", std::string{});
-                    if (sender == current_user) {
-                        _messageArea->addContent(
-                            "[" + sender + "]: " += item.value("text", std::string{}),
-                            messageArea::userType::currentUser);
-                    } else {
-                        _messageArea->addContent(
-                            "[" + sender + "]: " += item.value("text", std::string{}),
-                            messageArea::userType::otherUser);
-                    }
-                }
-                std::clog << "chatFile load success" << std::endl;
+                //TODO 读取本地SQLite聊天记录
                 show();
                 _loginWidget->close();
             }
@@ -283,7 +211,6 @@ void mainWidget::process_received_messages(chatClient &web_api) {
                 _createUserWidget,
                 success ? "注册成功" : "注册失败：用户名已存在",
                 success ? messageBox::Type::Success : messageBox::Type::Error
-                //TODO 为新用户创建SQLite my
             );
             if (success) {
                 _createUserWidget->close();

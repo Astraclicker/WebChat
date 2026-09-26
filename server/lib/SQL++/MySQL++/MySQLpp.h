@@ -39,6 +39,14 @@ namespace astra_sql {
         ~MySQLpp() = default;
 
         /**
+         * @brief 查询数据库中是否存在表
+         * @param tableName 表名
+         * @return true（存在）/false（不存在）
+         */
+        bool mysqlTableExists(const std::string &tableName);
+
+
+        /**
          * @brief sqlite创建表
          * @param tableName 要创建的表名
          * @param createRule 创建表的规则

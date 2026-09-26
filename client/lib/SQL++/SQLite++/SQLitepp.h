@@ -30,6 +30,13 @@ namespace astra_sql {
         SQLitepp(const std::string &dbName, bool foreign_key);
 
         /**
+         * @brief 查询一个表是否存在
+         * @param tableName 表名
+         * @return true（存在）/false（不存在）
+         */
+        bool sqliteTableExists(const std::string &tableName);
+
+        /**
          * @brief sqlite创建表
          * @param tableName 要创建的表名
          * @param createRule 创建表的规则
