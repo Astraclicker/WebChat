@@ -7,6 +7,8 @@
 #include <QHBoxLayout>
 #include <QCursor>
 #include <QScreen>
+#include <QEvent>
+#include <QGuiApplication>
 
 loginWidget::loginWidget(QWidget *parent, const int width, const int height) : QWidget(parent) {
     this->setWindowTitle("登录");

@@ -17,3 +17,8 @@ TODO.md
 
 # 服务端配置文件含数据库账号密码，不要提交
 server/config.json
+config.json
+
+AGENTS.md
+
+*.db
