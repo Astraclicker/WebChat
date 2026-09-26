@@ -25,7 +25,7 @@ namespace astra_sql {
 
         try {
             const std::string query = "SHOW TABLES LIKE '" + tableName + "'";
-            std::unique_ptr<sql::ResultSet> res(stmt->executeQuery(query));
+            std::unique_ptr<sql::ResultSet> res(statement->executeQuery(query));
             return res->next();
             cmd.clear();
         } catch (const std::exception &e) {
