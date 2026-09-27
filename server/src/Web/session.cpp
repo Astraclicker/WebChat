@@ -69,12 +69,39 @@ void session::broadCast(const std::string &msg, const std::string &receiver) con
     }
 }
 
-//将消息写入接收队列
+//同时存储对方发来的话
 void session::deliver(const std::string &msg) {
+    try {
+        const auto parsed = nlohmann::json::parse(msg);
+        if (parsed.value("type", std::string{}) == "text") {
+            const auto data = parsed.value("data", nlohmann::json::object());
+            saveMyChatHistory(data.value("sender", std::string{}), data.value("text", std::string{}));
+        }
+    } catch (const std::exception &error) {
+        std::cerr << "record received message failed: " << error.what() << std::endl;
+    }
+
+    //将消息写入接收队列
     const bool sendProgress = !sendMsgs.empty();
     sendMsgs.push_back(msg);
     if (!sendProgress) {
         doWrite();
+    }
+}
+
+//把一条消息存进发送者的聊天记录表
+void session::saveMyChatHistory(const std::string &sender, const std::string &text) {
+    //检测登录状态是否异常
+    if (this->myUserName.empty()) {
+        return;
+    }
+    //存库失败单独抛出异常日志，不影响其他功能
+    try {
+        if (!saveChatHistory(this->mysqlAPI, this->myUserName, sender, text)) {
+            std::cerr << "save chat history failed: " << this->myUserName << std::endl;
+        }
+    } catch (const std::exception &error) {
+        std::cerr << "save chat history error: " << error.what() << std::endl;
     }
 }
 
@@ -158,6 +185,9 @@ void session::handle_create_user(const std::string &login_user_name, const std::
         return;
     }
 
+    //注册成功时给这个用户建聊天记录表(每个用户一张)
+    createChatHistoryTable(mysqlAPI, login_user_name);
+
     const std::string cache_key = "login_cache:" + login_user_name;
     try {
         const bool cache_stored = redisAPI.set_string(cache_key, password, std::chrono::seconds(300));
@@ -191,7 +221,8 @@ void session::doRead() {
                     if (type == "text") {
                         const auto receiver = data.value("receiver", std::string{});
                         const auto text = data.value("text", std::string{});
-
+                        //广播的同时，给自己存一份
+                        saveMyChatHistory(myUserName, text);
                         broadCast(text, receiver);
                     } else {
                         const auto loginUserName = data.value("userName", std::string{});
