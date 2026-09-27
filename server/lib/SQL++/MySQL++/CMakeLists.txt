@@ -4,6 +4,8 @@ add_library(
     ${PROJECT_NAME}
     SHARED
     MySQLpp.cpp
+    # 将池的构造和造连接逻辑编入现有 MySQL++ 库。
+    MySQLPool.cpp
 )
 
 # Windows 导出符号（Linux/macOS 上该属性无效果，忽略）

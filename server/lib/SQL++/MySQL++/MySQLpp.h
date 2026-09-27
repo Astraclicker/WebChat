@@ -33,7 +33,8 @@ namespace astra_sql {
          * @param password MySQL密码
          */
 
-        MySQLpp(const std::string &host, unsigned int port, const std::string &UserName, const std::string &password);
+        MySQLpp(const std::string &host, unsigned int port, 
+            const std::string &UserName, const std::string &password);
 
         // 析构函数
         ~MySQLpp() = default;
