@@ -4,6 +4,7 @@
 #include <memory>
 #include "../MySQL/MySql.h"
 #include <chrono>
+#include <log.h>
 
 //构造函数
 session::session(
@@ -27,9 +28,14 @@ session::session(
       ),
       sessionSocker(std::move(socket)),
       sessionSet(sessions) {
-    mysqlAPI.switchDatabase("ChatServer");
+    if (mysqlAPI.switchDatabase("ChatServer") == astra_sql::SQLppError::success) {
+        LOG(astra_log::Level::Info, "MySQL 就绪，已切换到数据库 ChatServer");
+    } else {
+        LOG(astra_log::Level::Error, "MySQL 切换数据库 ChatServer 失败，本会话的数据库操作会失败");
+    }
 
     if (!mysqlAPI.mysqlTableExists("users")) {
+        LOG(astra_log::Level::Info, "数据表 users 不存在，正在创建");
         auto createRule = std::vector<astra_sql::createTableRule>{
             {"uid", "int", "not null auto_increment"},
             {"userName", "varchar(50)", "not null"},
@@ -38,13 +44,20 @@ session::session(
         const astra_sql::primaryKeyRule pk{"uid"};
         const astra_sql::uniqueKeyRule uk{"userName"};
 
-        mysqlAPI.mysqlCreateTable("users", createRule, &pk, &uk);
+        if (mysqlAPI.mysqlCreateTable("users", createRule, &pk, &uk) == astra_sql::SQLppError::success) {
+            LOG(astra_log::Level::Info, "数据表 users 创建成功");
+        } else {
+            LOG(astra_log::Level::Error, "数据表 users 创建失败");
+        }
+    } else {
+        LOG(astra_log::Level::Debug, "数据表 users 已存在");
     }
 }
 
 //启动接口
 void session::start() {
     sessionSet.insert(shared_from_this());
+    LOG(astra_log::Level::Info, "会话建立，当前在线会话数 = ", sessionSet.size());
     doRead();
 }
 
@@ -62,8 +75,7 @@ void session::broadCast(const std::string &msg, const std::string &receiver) con
         //TODO 校验receiver(作为拓展功能)
         if (session != this->shared_from_this()) {
             session->deliver(frame);
-            std::cout << this->sessionSocker.remote_endpoint() << " send to ";
-            std::cout << session->sessionSocker.remote_endpoint() << std::endl;
+            LOG(astra_log::Level::Info, "消息转发: ", this->myUserName, " -> ", receiver, " : ", msg);
             //TODO 聊天记录写入mysql
         }
     }
@@ -91,20 +103,21 @@ void session::doWrite() {
                     doWrite();
                 }
             } else {
+                LOG(astra_log::Level::Warn, "写数据失败，移除会话: ", errorCode.message());
                 sessionSet.erase(self);
             }
         });
 }
 
 void session::handle_login(const std::string &login_user_name, const std::string &password) {
+    // 注意：日志里只记录用户名，不记录密码
     const std::string cache_key = "login_cache:" + login_user_name;
     try {
         const auto cached_password = redisAPI.get_string(cache_key);
         if (cached_password && *cached_password == password) {
             bool ttl_refreshed = this->redisAPI.expire_key(cache_key, std::chrono::seconds(300));
             if (!ttl_refreshed) {
-                std::cerr << "login cache expired before TTL refresh: "
-                        << login_user_name << std::endl;
+                LOG(astra_log::Level::Warn, "登录缓存续期失败，可能已过期: ", login_user_name);
             }
             this->myUserName = login_user_name;
 
@@ -114,17 +127,14 @@ void session::handle_login(const std::string &login_user_name, const std::string
             response["data"] = "success";
             deliver(response.dump() + "\n");
 
-            std::cout << "Login cache hit: "
-                    << login_user_name << std::endl;
-
-            //缓存命中登录成功
-            std::cout << "login success" << std::endl;
+            LOG(astra_log::Level::Info, "登录成功（Redis 缓存命中）: ", login_user_name);
             return;
         }
     } catch (const std::exception &error) {
-        std::cerr << "failed to read login cache, fallback to MySQL: "
-                << error.what() << std::endl;
+        LOG(astra_log::Level::Warn, "读取登录缓存失败，回退查询 MySQL: ", error.what());
     }
+
+    LOG(astra_log::Level::Debug, "登录缓存未命中，转查 MySQL: ", login_user_name);
 
     std::string auth_user_name;
     login(mysqlAPI,
@@ -133,6 +143,7 @@ void session::handle_login(const std::string &login_user_name, const std::string
           auth_user_name);
     if (auth_user_name.empty()) //缓存未命中,查数据库查不到,登录失败
     {
+        LOG(astra_log::Level::Warn, "登录失败，用户名或密码错误: ", login_user_name);
         return;
     }
     //缓存未命中,查数据库回填
@@ -143,18 +154,15 @@ void session::handle_login(const std::string &login_user_name, const std::string
         redisAPI.set_string(cache_key,
                             password,
                             std::chrono::seconds(300));
-        std::cout << "login cache stored: "
-                << auth_user_name
-                << std::endl;
+        LOG(astra_log::Level::Info, "登录成功（MySQL 校验通过，已回填缓存）: ", auth_user_name);
     } catch (const std::exception &error) {
-        std::cerr << "fail to store login cache: "
-                << error.what()
-                << std::endl;
+        LOG(astra_log::Level::Warn, "写入登录缓存失败: ", error.what());
     }
 }
 
 void session::handle_create_user(const std::string &login_user_name, const std::string &password) {
     if (!createUser(mysqlAPI, login_user_name, password, sessionSocker) == true) {
+        LOG(astra_log::Level::Warn, "注册未成功，跳过写入登录缓存: ", login_user_name);
         return;
     }
 
@@ -162,11 +170,10 @@ void session::handle_create_user(const std::string &login_user_name, const std::
     try {
         const bool cache_stored = redisAPI.set_string(cache_key, password, std::chrono::seconds(300));
         if (!cache_stored) {
-            std::cerr << "fail to store login cache when create user" << login_user_name << std::endl;
+            LOG(astra_log::Level::Warn, "注册后写入登录缓存失败: ", login_user_name);
         }
     } catch (std::exception &error) {
-        std::cerr << "fail to store login cache when create user"
-                << error.what() << std::endl;
+        LOG(astra_log::Level::Warn, "注册后写入登录缓存异常: ", error.what());
     }
 }
 
@@ -191,7 +198,8 @@ void session::doRead() {
                     if (type == "text") {
                         const auto receiver = data.value("receiver", std::string{});
                         const auto text = data.value("text", std::string{});
-
+                        LOG(astra_log::Level::Debug, "收到文本消息 ", this->myUserName,
+                            " -> ", receiver, " : ", text);
                         broadCast(text, receiver);
                     } else {
                         const auto loginUserName = data.value("userName", std::string{});
@@ -203,11 +211,13 @@ void session::doRead() {
                         }
                     }
                 } catch (const std::exception &error) {
-                    std::cerr << error.what() << std::endl;
+                    LOG(astra_log::Level::Error, "消息解析失败: ", error.what(), "  原始内容: ", line);
                 }
                 doRead();
             } else {
                 sessionSet.erase(self);
+                LOG(astra_log::Level::Info, "客户端断开，移除会话，剩余在线会话数 = ",
+                    sessionSet.size(), "  (", errorCode.message(), ")");
             }
         });
 }
