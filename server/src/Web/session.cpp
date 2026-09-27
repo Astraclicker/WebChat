@@ -23,19 +23,10 @@ session::session(
       ),
       sessionSocker(std::move(socket)),
       sessionSet(sessions) {
+        //数据库相关的检查环节丢给server了
     mysqlAPI.switchDatabase("ChatServer");
 
-    if (!mysqlAPI.mysqlTableExists("users")) {
-        auto createRule = std::vector<astra_sql::createTableRule>{
-            {"uid", "int", "not null auto_increment"},
-            {"userName", "varchar(50)", "not null"},
-            {"password", "varchar(50)", "not null"}
-        };
-        const astra_sql::primaryKeyRule pk{"uid"};
-        const astra_sql::uniqueKeyRule uk{"userName"};
 
-        mysqlAPI.mysqlCreateTable("users", createRule, &pk, &uk);
-    }
 }
 
 //启动接口
