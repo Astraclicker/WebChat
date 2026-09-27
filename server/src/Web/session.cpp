@@ -9,7 +9,7 @@
 session::session(
     tcp::socket socket,
     const nlohmann::json &mysqlConfig,
-    const nlohmann::json &redisConfig,
+    astra_sql::Redispp & redisAPIRef,
     std::set<std::shared_ptr<session> > &sessions
 )
     : mysqlAPI(
@@ -19,11 +19,7 @@ session::session(
           mysqlConfig["password"]
       ),
       redisAPI(
-          redisConfig["address"],
-          redisConfig["port"],
-          redisConfig["userName"],
-          redisConfig["password"],
-          0
+        redisAPIRef
       ),
       sessionSocker(std::move(socket)),
       sessionSet(sessions) {
