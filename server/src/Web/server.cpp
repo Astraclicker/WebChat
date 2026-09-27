@@ -49,11 +49,20 @@ server::server(boost::asio::io_context &io, nlohmann::json config)
 void server::doAccept() {
     serverAcceptor.async_accept([this](const boost::system::error_code &errorCode, tcp::socket clientSocket) {
         if (!errorCode) {
+        try
+        {
             std::cout << clientSocket.remote_endpoint() << " connect to ";
             std::cout << clientSocket.local_endpoint() << std::endl;
             std::make_shared<session>(std::move(clientSocket), configFile["MySQL"], redisAPI, sessionSet)->
                     start();
         }
+        catch(const std::exception &error)
+        {
+            std::cerr << "fail to initialize session" << error.what() << std::endl;
+        }
+
+        }
+        //无论本次是否建立会话,都继续等下一个连接
         doAccept();
     });
 }

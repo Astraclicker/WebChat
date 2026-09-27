@@ -4,7 +4,7 @@
 #include <memory>
 #include "../MySQL/MySql.h"
 #include <chrono>
-
+#include <stdexcept>
 //构造函数
 session::session(
     tcp::socket socket,
@@ -23,8 +23,12 @@ session::session(
       ),
       sessionSocker(std::move(socket)),
       sessionSet(sessions) {
-        //数据库相关的检查环节丢给server了
-    mysqlAPI.switchDatabase("ChatServer");
+    //数据库相关的检查环节丢给server了
+    //然而S端选库成功不代表C端选库成功
+    if(mysqlAPI.switchDatabase("ChatServer")!=astra_sql::SQLppError::success)
+    {
+        throw std::runtime_error("fail to select ChatServer for session");
+    }
 
 
 }
