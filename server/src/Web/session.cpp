@@ -4,42 +4,23 @@
 #include <memory>
 #include "../MySQL/MySql.h"
 #include <chrono>
-
+#include <stdexcept>
 //构造函数
 session::session(
     tcp::socket socket,
-    const nlohmann::json &mysqlConfig,
-    const nlohmann::json &redisConfig,
+    astra_sql::MySQLPool &mysqlPoolRef,
+    astra_sql::Redispp & redisAPIRef,
     std::set<std::shared_ptr<session> > &sessions
-)
-    : mysqlAPI(
-          mysqlConfig["address"],
-          mysqlConfig["port"],
-          mysqlConfig["userName"],
-          mysqlConfig["password"]
-      ),
+):
+      mysqlPool(mysqlPoolRef),
       redisAPI(
-          redisConfig["address"],
-          redisConfig["port"],
-          redisConfig["userName"],
-          redisConfig["password"],
-          0
+        redisAPIRef
       ),
       sessionSocker(std::move(socket)),
       sessionSet(sessions) {
-    mysqlAPI.switchDatabase("ChatServer");
+    //数据库相关的检查环节丢给server了
+    //然而S端选库成功不代表C端选库成功
 
-    if (!mysqlAPI.mysqlTableExists("users")) {
-        auto createRule = std::vector<astra_sql::createTableRule>{
-            {"uid", "int", "not null auto_increment"},
-            {"userName", "varchar(50)", "not null"},
-            {"password", "varchar(50)", "not null"}
-        };
-        const astra_sql::primaryKeyRule pk{"uid"};
-        const astra_sql::uniqueKeyRule uk{"userName"};
-
-        mysqlAPI.mysqlCreateTable("users", createRule, &pk, &uk);
-    }
 }
 
 //启动接口
@@ -97,7 +78,8 @@ void session::saveMyChatHistory(const std::string &sender, const std::string &te
     }
     //存库失败单独抛出异常日志，不影响其他功能
     try {
-        if (!saveChatHistory(this->mysqlAPI, this->myUserName, sender, text)) {
+        auto connection = mysqlPool.borrow();
+        if (!saveChatHistory(*connection, this->myUserName, sender, text)) {
             std::cerr << "save chat history failed: " << this->myUserName << std::endl;
         }
     } catch (const std::exception &error) {
@@ -152,12 +134,16 @@ void session::handle_login(const std::string &login_user_name, const std::string
         std::cerr << "failed to read login cache, fallback to MySQL: "
                 << error.what() << std::endl;
     }
-
     std::string auth_user_name;
-    login(mysqlAPI,
-          login_user_name, password,
-          sessionSocker,
-          auth_user_name);
+    {
+        auto connection = mysqlPool.borrow();
+
+        login(*connection,
+            login_user_name, password,
+            sessionSocker,
+            auth_user_name);
+    }
+
     if (auth_user_name.empty()) //缓存未命中,查数据库查不到,登录失败
     {
         return;
@@ -181,12 +167,18 @@ void session::handle_login(const std::string &login_user_name, const std::string
 }
 
 void session::handle_create_user(const std::string &login_user_name, const std::string &password) {
-    if (!createUser(mysqlAPI, login_user_name, password, sessionSocker) == true) {
-        return;
+    //数据库连接的控制权在server而不是session
+    //尽早归还数据库连接
+    {
+        auto connection = mysqlPool.borrow();
+        if (!createUser(*connection, login_user_name, password, sessionSocker) == true) {
+            return;
+        }
+        createChatHistoryTable(*connection, login_user_name);
     }
 
     //注册成功时给这个用户建聊天记录表(每个用户一张)
-    createChatHistoryTable(mysqlAPI, login_user_name);
+
 
     const std::string cache_key = "login_cache:" + login_user_name;
     try {
