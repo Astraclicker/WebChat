@@ -6,15 +6,16 @@
 #include <json.hpp>
 #include "../MySQL/MySql.h"
 #include <Redis++/Redispp.h>
+#include <MySQL++/MySQLPool.h>
 using namespace boost::asio::ip;
 
 //会话类
 class session : public std::enable_shared_from_this<session> {
 protected:
-    //mysql接口
-    astra_sql::MySQLpp mysqlAPI;
-    //redis接口
-    astra_sql::Redispp redisAPI;
+    //mysql连接池接口,优化掉session的mysqlpp
+    astra_sql::MySQLPool &mysqlPool;
+    //redis接口,连接池设计改回引用
+    astra_sql::Redispp &redisAPI;
     //每个会话维护一个socket
     tcp::socket sessionSocker;
     //读取缓冲区
@@ -46,10 +47,10 @@ public:
     //本socket用户名
     std::string myUserName{};
 
-    //构造函数
+    //构造函数,连接池把接口对象改为引用,参数传引用
     session(tcp::socket socket,
-            const nlohmann::json& mysqlConfig,
-            const nlohmann::json& redisConfig,
+            astra_sql::MySQLPool &mysqlPoolRef,
+            astra_sql::Redispp &redis_api_ref,
             std::set<std::shared_ptr<session> > &sessions);
 
     //将消息写入发送队列
@@ -66,6 +67,9 @@ public:
 //服务器类，接受连接，管理会话
 class server {
 protected:
+    // 会话只借用 server 持有的 Redispp；多个会话经由它使用同一个内部连接池。
+    astra_sql::MySQLPool mysqlPool;
+    astra_sql::Redispp redisAPI;
     tcp::acceptor serverAcceptor;
     std::set<std::shared_ptr<session> > sessionSet;
 
