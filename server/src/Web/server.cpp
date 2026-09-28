@@ -4,7 +4,13 @@
 #include <vector>
 //构造函数
 server::server(boost::asio::io_context &io, nlohmann::json config)
-    : redisAPI(config["Redis"]["address"],
+    : mysqlPool(config["MySQL"]["address"],
+      config["MySQL"]["port"],
+      config["MySQL"]["userName"],
+      config["MySQL"]["password"],
+      "ChatServer",
+      4),
+    redisAPI(config["Redis"]["address"],
         config["Redis"]["port"],
         config["Redis"]["userName"],
         config["Redis"]["password"],
@@ -45,7 +51,7 @@ server::server(boost::asio::io_context &io, nlohmann::json config)
     doAccept();
 }
 
-//对接socket,把session塞到session_set里面
+//对接socket,start()把session塞到session_set里面
 void server::doAccept() {
     serverAcceptor.async_accept([this](const boost::system::error_code &errorCode, tcp::socket clientSocket) {
         if (!errorCode) {
@@ -53,7 +59,7 @@ void server::doAccept() {
         {
             std::cout << clientSocket.remote_endpoint() << " connect to ";
             std::cout << clientSocket.local_endpoint() << std::endl;
-            std::make_shared<session>(std::move(clientSocket), configFile["MySQL"], redisAPI, sessionSet)->
+            std::make_shared<session>(std::move(clientSocket), mysqlPool, redisAPI, sessionSet)->
                     start();
         }
         catch(const std::exception &error)

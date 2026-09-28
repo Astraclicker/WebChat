@@ -8,16 +8,11 @@
 //构造函数
 session::session(
     tcp::socket socket,
-    const nlohmann::json &mysqlConfig,
+    astra_sql::MySQLPool &mysqlPoolRef,
     astra_sql::Redispp & redisAPIRef,
     std::set<std::shared_ptr<session> > &sessions
-)
-    : mysqlAPI(
-          mysqlConfig["address"],
-          mysqlConfig["port"],
-          mysqlConfig["userName"],
-          mysqlConfig["password"]
-      ),
+):
+      mysqlPool(mysqlPoolRef),
       redisAPI(
         redisAPIRef
       ),
@@ -25,11 +20,6 @@ session::session(
       sessionSet(sessions) {
     //数据库相关的检查环节丢给server了
     //然而S端选库成功不代表C端选库成功
-    if(mysqlAPI.switchDatabase("ChatServer")!=astra_sql::SQLppError::success)
-    {
-        throw std::runtime_error("fail to select ChatServer for session");
-    }
-
 
 }
 
@@ -116,9 +106,9 @@ void session::handle_login(const std::string &login_user_name, const std::string
         std::cerr << "failed to read login cache, fallback to MySQL: "
                 << error.what() << std::endl;
     }
-
+    auto connection = mysqlPool.borrow();
     std::string auth_user_name;
-    login(mysqlAPI,
+    login(*connection,
           login_user_name, password,
           sessionSocker,
           auth_user_name);
@@ -145,7 +135,9 @@ void session::handle_login(const std::string &login_user_name, const std::string
 }
 
 void session::handle_create_user(const std::string &login_user_name, const std::string &password) {
-    if (!createUser(mysqlAPI, login_user_name, password, sessionSocker) == true) {
+    //数据库连接的控制权在server而不是session
+    auto connection = mysqlPool.borrow();
+    if (!createUser(*connection, login_user_name, password, sessionSocker) == true) {
         return;
     }
 
