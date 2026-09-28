@@ -106,12 +106,16 @@ void session::handle_login(const std::string &login_user_name, const std::string
         std::cerr << "failed to read login cache, fallback to MySQL: "
                 << error.what() << std::endl;
     }
-    auto connection = mysqlPool.borrow();
     std::string auth_user_name;
-    login(*connection,
-          login_user_name, password,
-          sessionSocker,
-          auth_user_name);
+    {
+        auto connection = mysqlPool.borrow();
+
+        login(*connection,
+            login_user_name, password,
+            sessionSocker,
+            auth_user_name);
+    }
+
     if (auth_user_name.empty()) //缓存未命中,查数据库查不到,登录失败
     {
         return;
@@ -136,10 +140,14 @@ void session::handle_login(const std::string &login_user_name, const std::string
 
 void session::handle_create_user(const std::string &login_user_name, const std::string &password) {
     //数据库连接的控制权在server而不是session
-    auto connection = mysqlPool.borrow();
-    if (!createUser(*connection, login_user_name, password, sessionSocker) == true) {
-        return;
+    //尽早归还数据库连接
+    {
+        auto connection = mysqlPool.borrow();
+        if (!createUser(*connection, login_user_name, password, sessionSocker) == true) {
+            return;
+        }
     }
+
 
     const std::string cache_key = "login_cache:" + login_user_name;
     try {
