@@ -12,9 +12,12 @@ void login(astra_sql::MySQLpp &mysqlAPI, const std::string &loginUserName, const
 bool createUser(astra_sql::MySQLpp &mysqlAPI, const std::string &loginUserName, const std::string &password,
                 tcp::socket &sessionSocker);
 
-//保存一条聊天记录到chat_history,写入成功返回true
-//时间戳由服务端生成,不接受客户端传入
-bool saveChatHistory(astra_sql::MySQLpp &mysqlAPI, const std::string &sender, const std::string &text);
+//把用户名转成聊天记录表名: chat_history_<用户名>
+std::string chatHistoryTableName(const std::string &userName);
 
-//TODO创建用于存储聊天记录的表(每个用户一张)
+//创建用于存储聊天记录的表(每个用户一张)
 void createChatHistoryTable(astra_sql::MySQLpp &mysqlAPI, const std::string &userName);
+
+//把一条聊天记录写进 tableOwner 的那张表
+bool saveChatHistory(astra_sql::MySQLpp &mysqlAPI, const std::string &tableOwner,
+                     const std::string &sender, const std::string &text);

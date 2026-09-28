@@ -81,9 +81,10 @@ bool createUser(
     return ok;
 }
 
-//保存一条聊天记录
+//保存一条聊天记录，用tableOwner生成表名
 bool saveChatHistory(
     astra_sql::MySQLpp &mysqlAPI,
+    const std::string &tableOwner,
     const std::string &sender,
     const std::string &text
 ) {
@@ -102,10 +103,43 @@ bool saveChatHistory(
         astra_sql::mysqlDataType::DataTime
     };
 
-    const auto result = mysqlAPI.addItem("chat_history", chatData, chatType);
+    const auto result = mysqlAPI.addItem(chatHistoryTableName(tableOwner), chatData, chatType);
     return result == astra_sql::SQLppError::success;
 }
 
-//TODO创建用于存储聊天记录的表(每个用户一张)
+//先把用户名转化成表名
+std::string chatHistoryTableName(const std::string &userName) {
+    //表名里只保留字母数字下划线
+    std::string safe;
+    safe.reserve(userName.size());
+    for (const char c: userName) {
+        if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+            (c >= '0' && c <= '9') || c == '_') {
+            safe += c;
+        } else {
+            safe += '_';
+        }
+    }
+    //设立表名的字符数上限
+    if (safe.size() > 50) {
+        safe.resize(50);
+    }
+    return "chat_history_" + safe;
+}
+
+//创建聊天记录表
 void createChatHistoryTable(astra_sql::MySQLpp &mysqlAPI, const std::string &userName) {
+    auto createRule = std::vector<astra_sql::createTableRule>{
+        {"uid", "int", "not null auto_increment"},
+        {"sender", "varchar(50)", "not null"},
+        {"text", "TEXT", "not null"},
+        {"sendTime", "datetime", "not null"}
+    };
+    const astra_sql::primaryKeyRule pk{"uid"};
+
+    //mysqlCreateTable内部就是"create table if not exists",重复调用不报错,所以不用先查存在性
+    const auto result = mysqlAPI.mysqlCreateTable(chatHistoryTableName(userName), createRule, &pk, nullptr);
+    if (result != astra_sql::SQLppError::success) {
+        std::cerr << "create chat history table failed: " << userName << std::endl;
+    }
 }
