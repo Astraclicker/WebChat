@@ -37,6 +37,9 @@ protected:
     //从readBuffer中读取数据并调用广播函数
     void doRead();
 
+    //把一条消息存进发送者那张聊天记录表
+    void saveMyChatHistory(const std::string &sender, const std::string &text);
+
     //广播给会话集合中的每一个客户端
     void broadCast(const std::string &msg, const std::string &receiver) const;
 
