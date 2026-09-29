@@ -101,7 +101,7 @@ void mainWidget::initConnect(chatClient &web_api) {
 
         try {
             //TODO 将聊天记录写入本地SQLite
-         my_db.my_init(current_user);
+           my_db.my_init(current_user);
            my_db.my_chatInsert(current_user,current_user,text);
 
         } catch (std::exception &error) {
@@ -183,7 +183,7 @@ void mainWidget::process_received_messages(chatClient &web_api) {
 
             _messageArea->addContent("[" + sender + "]: " += text, messageArea::userType::otherUser);
             //TODO写入聊天记录到本地SQLite
-            my_db.my_init(_loginWidget->getPassword());
+            my_db.my_init(_loginWidget->getUserName());
             my_db.my_chatInsert( _loginWidget->getUserName(),sender,text);
             continue;
         }
@@ -224,7 +224,7 @@ void mainWidget::process_received_messages(chatClient &web_api) {
                 success ? messageBox::Type::Success : messageBox::Type::Error
             );
             if (success) {
-                my_db.my_Insert(current_user,_loginWidget->getPassword());
+                my_db.my_Insert(_createUserWidget->getUserName(), _createUserWidget->getPassword());
                 _createUserWidget->close();
                 _loginWidget->show();
             }
