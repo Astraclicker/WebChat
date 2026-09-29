@@ -6,6 +6,8 @@
 #include <iostream>
 #include <filesystem>
 
+#include "../SQLite/SQLite.h"
+
 mainWidget::mainWidget(
     QWidget *parent,
     const std::string &title,
@@ -84,6 +86,7 @@ void mainWidget::initConnect(chatClient &web_api) {
 
     //连接发送按钮与发送消息请求
     connect(button_send, &QPushButton::clicked, this, [this, &web_api]() {
+        my_SQLite my_db;
         nlohmann::json json_data;
         const std::string text = message_input->toPlainText().trimmed().toStdString();
         if (text.empty()) {
@@ -98,6 +101,9 @@ void mainWidget::initConnect(chatClient &web_api) {
 
         try {
             //TODO 将聊天记录写入本地SQLite
+         my_db.my_init(current_user);
+           my_db.my_chatInsert(current_user,current_user,text);
+
         } catch (std::exception &error) {
             std::cerr << error.what() << std::endl;
         }
@@ -167,6 +173,7 @@ void mainWidget::appendChatHistory(const std::string &sender, const std::string 
 //检查接收队列并打印消息
 void mainWidget::process_received_messages(chatClient &web_api) {
     nlohmann::json read_message;
+    my_SQLite my_db;
     while (web_api.try_pop_message(read_message)) {
         const std::string type = read_message.value("type", std::string{});
         if (type == "text") {
@@ -176,6 +183,8 @@ void mainWidget::process_received_messages(chatClient &web_api) {
 
             _messageArea->addContent("[" + sender + "]: " += text, messageArea::userType::otherUser);
             //TODO写入聊天记录到本地SQLite
+            my_db.my_init(_loginWidget->getPassword());
+            my_db.my_chatInsert( _loginWidget->getUserName(),sender,text);
             continue;
         }
 
@@ -196,7 +205,9 @@ void mainWidget::process_received_messages(chatClient &web_api) {
                 
                 //TODO 创建存储聊天记录的表结构
 
+                my_db.my_init(current_user);
                 //TODO 读取本地SQLite聊天记录
+                my_db.my_chatSearch(current_user);//返回用户对应聊天记录的nlohmann::json
                 show();
                 _loginWidget->close();
             }
@@ -213,6 +224,7 @@ void mainWidget::process_received_messages(chatClient &web_api) {
                 success ? messageBox::Type::Success : messageBox::Type::Error
             );
             if (success) {
+                my_db.my_Insert(current_user,_loginWidget->getPassword());
                 _createUserWidget->close();
                 _loginWidget->show();
             }

@@ -4,7 +4,7 @@
 
 
 
-class my_sqllite{
+class my_SQLite{
     protected:
 
 
@@ -16,10 +16,10 @@ class my_sqllite{
 
     public:
 
-    my_sqllite();
-    ~my_sqllite();
+    my_SQLite();
+    ~my_SQLite();
     /*
-     *初始化 数据表 建立对应用户名的数据表
+     *寻找对应用户的 数据表 CTable接受user值 不存在建立对应用户名的数据表
      *user 要建立的用户名对应的消息表
      *
      *
@@ -64,6 +64,7 @@ class my_sqllite{
     */
     void my_chatInsert(std::string user,std::string spend,std::string text);
     /*
+     *需先my_init 选中指定的用户表
        *返回 指定 用户 的聊天记录
        *user 用户名
 
@@ -71,6 +72,7 @@ class my_sqllite{
        */
     nlohmann::json my_chatSearch(const std::string &user) ;
     /*
+     *需先my_init 选中指定的用户表
         *删除消息表中指定id的消息
         *id
         *
