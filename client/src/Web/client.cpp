@@ -105,7 +105,7 @@ void chatClient::doWrite() {
         clientSocket,
         boost::asio::buffer(*payload),
         //写入完成调用回调函数,弹出第一条数据
-        [this](const boost::system::error_code &errorCode, std::size_t) {
+        [this,payload](const boost::system::error_code &errorCode, std::size_t) {
             if (!errorCode) {
                 writeMsgs.pop_front();
                 if (!writeMsgs.empty()) {

@@ -164,6 +164,7 @@ void session::doWrite() {
                 }
             } else {
                 sessionSet.erase(self);
+                sendMsgs.clear();
             }
         });
 }
