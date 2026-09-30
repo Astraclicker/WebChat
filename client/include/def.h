@@ -1,12 +1,13 @@
 #pragma once
+#include <ctime>
 #include <string>
 
-// 公共协议类型保持跨平台，不能在这里依赖 Windows 专用的字符编码 API。
 enum class message_type
 {
     text,
     login_requested,
-    create_user_requested
+    create_user_requested,
+    sync_requested
 };
 
 struct message
@@ -14,3 +15,17 @@ struct message
     std::string data;
     message_type type;
 };
+
+//本地时间戳(YYYY-MM-DD HH:MM:SS)
+inline std::string nowLocalTimestamp() {
+    const std::time_t now = std::time(nullptr);
+    std::tm local{};
+#if defined(_WIN32)
+    localtime_s(&local, &now);
+#else
+    localtime_r(&now, &local);
+#endif
+    char buffer[32] = {};
+    std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &local);
+    return buffer;
+}
