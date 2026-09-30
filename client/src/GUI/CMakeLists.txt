@@ -6,7 +6,11 @@ add_library(
         ${PROJECT_NAME}
         SHARED
         mainWidget.cpp
-        serverWidget.cpp
+        loginWidget.cpp
+        createUserWidget.cpp
+        messageBox.cpp
+        messageArea.cpp
+        messageBubble.cpp
 )
 
 target_link_libraries(
