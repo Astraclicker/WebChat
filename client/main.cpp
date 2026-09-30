@@ -1,23 +1,26 @@
 #include <GUI/mainWidget.h>
 #include <Web/client.h>
 #include <thread>
+#include <fstream>
 #include <iostream>
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
+    if (argv[1] == nullptr) {
+        std::cerr << "must provide config file" << std::endl;
+        return 1;
+    }
+    std::ifstream configFile(argv[1]);
+    nlohmann::json configJson = nlohmann::json::parse(configFile);
+
     boost::asio::io_context io;
     tcp::resolver resolver(io);
-    const auto endpoints = resolver.resolve("127.0.0.1", "9191");
+    const auto endpoints = resolver.resolve(configJson["Web"]["address"], configJson["Web"]["port"]);
     chatClient chat(io, endpoints);
 
-    std::thread client_thread([&]()
-    {
-        try
-        {
+    std::thread client_thread([&]() {
+        try {
             io.run();
-        }
-        catch (std::exception &error)
-        {
+        } catch (std::exception &error) {
             std::cerr << "Exception: " << error.what() << std::endl;
         }
     });
