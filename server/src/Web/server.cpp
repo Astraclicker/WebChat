@@ -14,8 +14,7 @@ server::server(boost::asio::io_context &io, nlohmann::json config)
                config["Redis"]["port"],
                config["Redis"]["userName"],
                config["Redis"]["password"],
-               0
-      ),
+               0),
       serverAcceptor(io, tcp::endpoint(tcp::v4(), config["Web"]["port"])),
       configFile(config) {
     nlohmann::json mysql_config = config["MySQL"];
@@ -49,7 +48,7 @@ server::server(boost::asio::io_context &io, nlohmann::json config)
     doAccept();
 }
 
-//对接socket,start()把session塞到session_set里面
+//连接客户端与服务端
 void server::doAccept() {
     serverAcceptor.async_accept([this](const boost::system::error_code &errorCode, tcp::socket clientSocket) {
         if (!errorCode) {

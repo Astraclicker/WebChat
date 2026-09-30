@@ -1,14 +1,11 @@
 #include "MySql.h"
-#include <chrono>
 #include <iostream>
 #include <memory>
 #include <vector>
 #include <def.h>
 
 namespace {
-    //全服只有这一张聊天记录表: 所有用户的消息都写在这里
-    //(不再"一个用户一张表",登录时客户端拿本地最后一条和这张表的最后一条比对)
-    constexpr const char *kChatTableName = "chat_messages";
+    constexpr auto kChatTableName = "chat_messages";
 }
 
 //登录
@@ -30,13 +27,10 @@ void login(
         {"password", "=", password, "and"}
     };
     const auto json = mysqlAPI.searchItem("users", userData, rule);
-    //searchItem 把每一列都按字符串数组返回,uid 在里面也是字符串
-    const auto uid_list = json.is_object()
-                              ? json.value("uid", nlohmann::json::array())
-                              : nlohmann::json::array();
-    const bool ok = json.is_object()
-                    && !json.value("userName", nlohmann::json::array()).empty()
-                    && !uid_list.empty();
+
+    //searchItem 把每一列都按字符串数组返回
+    const auto uid_list = json.is_object() ? json.value("uid", nlohmann::json::array()) : nlohmann::json::array();
+    const bool ok = json.is_object() && !json.value("userName", nlohmann::json::array()).empty() && !uid_list.empty();
 
     nlohmann::json back;
     back["type"] = "mysqlLoginFeedBack";
@@ -116,15 +110,14 @@ bool createUser(
     return ok;
 }
 
-//保存一条聊天记录(全服同一张表)
+//保存一条聊天记录
 bool saveChatHistory(
     astra_sql::MySQLpp &mysqlAPI,
     const std::string &sender,
     const std::string &text,
     const std::string &sendTime
 ) {
-    //时间戳以发送方给的为准(两端存同一个值,登录时才能比对"最后一条"),
-    //发送方没给或者格式不对时用服务端本地时间兜底
+    //发送方没给或者格式不对时以服务端本地时间为准
     const std::string stamp = (sendTime.size() == 19) ? sendTime : nowLocalTimestamp();
 
     const astra_sql::item chatData{
@@ -135,7 +128,6 @@ bool saveChatHistory(
     const astra_sql::mysqlItemType chatType{
         astra_sql::mysqlDataType::String,
         astra_sql::mysqlDataType::String,
-        //DataTime对应setDateTime,接受"YYYY-MM-DD HH:MM:SS"格式的字符串
         astra_sql::mysqlDataType::DataTime
     };
 
@@ -145,7 +137,7 @@ bool saveChatHistory(
 
 //取聊天记录表里最近的 limit 条(升序,最后一条就是最新的一条)
 nlohmann::json fetchLatestChatRows(astra_sql::MySQLpp &mysqlAPI, const int limit) {
-    const auto rows = mysqlAPI.searchLatestRows(
+    auto rows = mysqlAPI.searchLatestRows(
         kChatTableName,
         {"sender", "text", "sendTime"},
         "sendTime",
@@ -156,17 +148,18 @@ nlohmann::json fetchLatestChatRows(astra_sql::MySQLpp &mysqlAPI, const int limit
     return rows;
 }
 
-//创建聊天记录表(全服就这一张)
+//创建聊天记录表
 void createChatHistoryTable(astra_sql::MySQLpp &mysqlAPI) {
-    auto createRule = std::vector<astra_sql::createTableRule>{
-        {"sender", "varchar(50)", "not null"},
-        {"text", "TEXT", "not null"},
-        {"sendTime", "datetime", "not null"}
-    };
+    if (!mysqlAPI.mysqlTableExists(kChatTableName)) {
+        const auto createRule = std::vector<astra_sql::createTableRule>{
+            {"sender", "varchar(50)", "not null"},
+            {"text", "TEXT", "not null"},
+            {"sendTime", "datetime", "not null"}
+        };
 
-    //mysqlCreateTable内部就是"create table if not exists",重复调用不报错,所以不用先查存在性
-    const auto result = mysqlAPI.mysqlCreateTable(kChatTableName, createRule, nullptr, nullptr);
-    if (result != astra_sql::SQLppError::success) {
-        std::cerr << "create chat table failed: " << kChatTableName << std::endl;
+        const auto result = mysqlAPI.mysqlCreateTable(kChatTableName, createRule, nullptr, nullptr);
+        if (result != astra_sql::SQLppError::success) {
+            std::cerr << "create chat table failed: " << kChatTableName << std::endl;
+        }
     }
 }

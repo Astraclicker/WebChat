@@ -5,7 +5,6 @@
 #include <memory>
 #include "../MySQL/MySql.h"
 #include <chrono>
-#include <stdexcept>
 
 namespace {
     //登录比对不一致时,最多补发多少条
@@ -23,7 +22,6 @@ session::session(
     sessionSocker(std::move(socket)),
     sessionSet(sessions) {
     //数据库相关的检查环节丢给server了
-    //然而S端选库成功不代表C端选库成功
 }
 
 //启动接口
@@ -45,18 +43,15 @@ void session::broadCast(const std::string &msg, const std::string &receiver, con
 
     for (auto &session: sessionSet) {
         //好友和群组功能作为拓展功能，目前不校验receiver，只排排除自己
-        //TODO 校验receiver(作为拓展功能)
         if (session != this->shared_from_this()) {
             session->deliver(frame);
             std::cout << this->sessionSocker.remote_endpoint() << " send to ";
             std::cout << session->sessionSocker.remote_endpoint() << std::endl;
-            //TODO 聊天记录写入mysql
         }
     }
 }
 
-//消息只在这里排队发送,不做"顺手存库":
-//聊天记录只有一张表,只有发送方写一次就行了——如果接收方也写,一条消息会被存 N+1 份
+//消息在这里排队发送
 void session::deliver(const std::string &msg) {
     //将消息写入接收队列
     const bool sendProgress = !sendMsgs.empty();
@@ -66,16 +61,15 @@ void session::deliver(const std::string &msg) {
     }
 }
 
-//把一条消息存进聊天记录表(全服同一张)
-void session::saveMyChatHistory(const std::string &sender, const std::string &text, const std::string &sendTime) {
+//把一条消息存进聊天记录表
+void session::saveMyChatHistory(const std::string &sender, const std::string &text, const std::string &sendTime) const {
     //检测登录状态是否异常(没拿到 uid 说明还没登录成功)
     if (this->myUid <= 0) {
         return;
     }
     //存库失败单独抛出异常日志，不影响其他功能
     try {
-        auto connection = mysqlPool.borrow();
-        if (!saveChatHistory(*connection, sender, text, sendTime)) {
+        if (!saveChatHistory(*mysqlPool.borrow(), sender, text, sendTime)) {
             std::cerr << "save chat history failed: " << this->myUserName << std::endl;
         }
     } catch (const std::exception &error) {
@@ -83,6 +77,7 @@ void session::saveMyChatHistory(const std::string &sender, const std::string &te
     }
 }
 
+//处理客户端发送的同步请求
 void session::handle_sync(const nlohmann::json &data) {
     if (this->myUid <= 0) {
         nlohmann::json out;
@@ -92,7 +87,7 @@ void session::handle_sync(const nlohmann::json &data) {
         return;
     }
 
-    //客户端报上来的"本地最后一条"(本地一条都没有时是空串)
+    //解释客户端发送的同步请求
     const std::string lastSender = data.value("lastSender", std::string{});
     const std::string lastText = data.value("lastText", std::string{});
     const std::string lastTime = data.value("lastTime", std::string{});
@@ -103,7 +98,7 @@ void session::handle_sync(const nlohmann::json &data) {
     try {
         auto connection = mysqlPool.borrow();
 
-        //服务端这一侧的最新一条(全服同一张表的最新一条)
+        //服务端这一侧的最新一条
         const auto latest = fetchLatestChatRows(*connection, 1);
         const auto latestSenders = latest.value("sender", nlohmann::json::array());
         const auto latestTexts = latest.value("text", nlohmann::json::array());
@@ -173,13 +168,12 @@ void session::doWrite() {
         });
 }
 
+//处理客户端登录请求
 void session::handle_login(const std::string &login_user_name, const std::string &password) {
     const std::string cache_key = "login_cache:" + login_user_name;
     try {
         const auto cached_login = redisAPI.get_string(cache_key);
         if (cached_login) {
-            //缓存里存的是 {"password":...,"uid":...}
-            //(旧的纯密码格式会解析失败抛异常,直接落到下面的 MySQL 分支,相当于缓存未命中)
             const auto cached_data = nlohmann::json::parse(*cached_login);
             if (cached_data.value("password", std::string{}) == password) {
                 bool ttl_refreshed = this->redisAPI.expire_key(cache_key, std::chrono::seconds(300));
@@ -245,7 +239,7 @@ void session::handle_login(const std::string &login_user_name, const std::string
         if (this->myUid > 0) {
             createChatHistoryTable(*mysqlPool.borrow());
         }
-        //把 uid 和密码一起缓存,下次命中就不用再查库拿 uid 了
+        //把 uid 和密码一起缓存
         nlohmann::json cache_value;
         cache_value["password"] = password;
         cache_value["uid"] = this->myUid;
@@ -262,12 +256,11 @@ void session::handle_login(const std::string &login_user_name, const std::string
     }
 }
 
+//处理客户端的创建用户请求
 void session::handle_create_user(const std::string &login_user_name, const std::string &password) {
-    //数据库连接的控制权在server而不是session
-    //尽早归还数据库连接
     long long new_uid = 0;
-    std::string frame;
     {
+        std::string frame;
         auto connection = mysqlPool.borrow();
         const bool ok = createUser(*connection, login_user_name, password, new_uid, frame);
         //成功/失败都要给客户端回执,同样走发送队列,不直接写 socket
@@ -277,7 +270,7 @@ void session::handle_create_user(const std::string &login_user_name, const std::
         if (!ok) {
             return;
         }
-        //注册成功时确保聊天记录表存在(全服一张,建表是幂等的)
+        //注册成功时确保聊天记录表存在
         if (new_uid > 0) {
             createChatHistoryTable(*connection);
         }
@@ -285,7 +278,6 @@ void session::handle_create_user(const std::string &login_user_name, const std::
 
     const std::string cache_key = "login_cache:" + login_user_name;
     try {
-        //和登录路径统一: 缓存里存 {"password":...,"uid":...}
         nlohmann::json cache_value;
         cache_value["password"] = password;
         cache_value["uid"] = new_uid;

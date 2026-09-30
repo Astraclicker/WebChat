@@ -4,7 +4,6 @@
 #include <deque>
 #include<def.h>
 #include <json.hpp>
-#include "../MySQL/MySql.h"
 #include <Redis++/Redispp.h>
 #include <MySQL++/MySQLPool.h>
 using namespace boost::asio::ip;
@@ -12,9 +11,9 @@ using namespace boost::asio::ip;
 //会话类
 class session : public std::enable_shared_from_this<session> {
 protected:
-    //mysql连接池接口,优化掉session的mysqlpp
+    //mysql连接池接口
     astra_sql::MySQLPool &mysqlPool;
-    //redis接口,连接池设计改回引用
+    //redis接口
     astra_sql::Redispp &redisAPI;
     //每个会话维护一个socket
     tcp::socket sessionSocker;
@@ -37,14 +36,13 @@ protected:
     //从readBuffer中读取数据并调用广播函数
     void doRead();
 
-    //把一条消息存进聊天记录表(全服同一张)
-    //sendTime 由发送方给出,双方存同一个值(登录时才能比对"最后一条")
-    void saveMyChatHistory(const std::string &sender, const std::string &text, const std::string &sendTime);
+    //把一条消息存进聊天记录表
+    void saveMyChatHistory(const std::string &sender, const std::string &text, const std::string &sendTime) const;
 
     //广播给会话集合中的每一个客户端
     void broadCast(const std::string &msg, const std::string &receiver, const std::string &sendTime) const;
 
-    //登录后的比对+补拉: 本地最后一条和服务端最后一条不一致时,把最近的一批记录发回去
+    //登录后的比对 本地最后一条和服务端最后一条不一致时,把最近的一批记录发回去
     void handle_sync(const nlohmann::json &data);
 
 public:
@@ -74,10 +72,13 @@ public:
 //服务器类，接受连接，管理会话
 class server {
 protected:
-    // 会话只借用 server 持有的 Redispp；多个会话经由它使用同一个内部连接池。
+    //MySQL连接池
     astra_sql::MySQLPool mysqlPool;
+    //Redis接口
     astra_sql::Redispp redisAPI;
+    //客户端连接服务端接口
     tcp::acceptor serverAcceptor;
+    //维护一颗红黑树,epoll思想
     std::set<std::shared_ptr<session> > sessionSet;
 
     //服务器配置文件
