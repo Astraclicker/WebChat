@@ -27,8 +27,10 @@ server::server(boost::asio::io_context &io, nlohmann::json config)
     );
 
     if (startup_mysql.switchDatabase("ChatServer") != astra_sql::SQLppError::success) {
-        //因为创建新的数据库要有授权,所以这里不新建
-        throw std::runtime_error("fail to select ChatServer database");
+        if (startup_mysql.createDatabase("ChatServer") != astra_sql::SQLppError::success) {
+            throw std::runtime_error("fail to select ChatServer database");
+        }
+        startup_mysql.switchDatabase("ChatServer");
     }
     //没有表就建表
     if (!startup_mysql.mysqlTableExists("users")) {

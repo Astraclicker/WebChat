@@ -39,6 +39,12 @@ unset(_CFG)
 
 add_executable(${PROJECT_NAME} main.cpp)
 
+set_target_properties(${PROJECT_NAME}
+        PROPERTIES
+        INSTALL_RPATH "$ORIGIN"
+        BUILD_WITH_INSTALL_RPATH TRUE
+)
+
 target_include_directories(
         ${PROJECT_NAME}
         PUBLIC
