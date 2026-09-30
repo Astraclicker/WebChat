@@ -19,7 +19,9 @@ namespace astra_sql {
         if (!userName.empty()) {
             connection_options.user = userName;
         }
-        if (!userName.empty()) {
+        //密码只看 password 本身: 之前这里也判 userName,于是"配了密码没配用户名"时
+        //从不发 AUTH,所有命令都返回 NOAUTH,登录缓存恒未命中
+        if (!password.empty()) {
             connection_options.password = password;
         }
         connection_options.db = db;
