@@ -1,10 +1,12 @@
 #include "mainWidget.h"
 #include <QScreen>
 #include <QVBoxLayout>
-#include "serverWidget.h"
-#include <fstream>
+#include "messageBox.h"
+#include "messageBubble.h"
+#include <algorithm>
 #include <iostream>
-#include <filesystem>
+#include <string>
+#include <vector>
 
 #include "../SQLite/SQLite.h"
 
@@ -86,7 +88,6 @@ void mainWidget::initConnect(chatClient &web_api) {
 
     //连接发送按钮与发送消息请求
     connect(button_send, &QPushButton::clicked, this, [this, &web_api]() {
-        my_SQLite my_db;
         nlohmann::json json_data;
         const std::string text = message_input->toPlainText().trimmed().toStdString();
         if (text.empty()) {
@@ -94,18 +95,19 @@ void mainWidget::initConnect(chatClient &web_api) {
             return;
         }
 
-        // TODO 选择接收者(作为拓展功能)
-        json_data["receiver"] = "root";
+        if (!web_api.is_connected()) {
+            messageBox::popup(this, "未连接到服务端，消息未发送", messageBox::Type::Error);
+            return;
+        }
         json_data["text"] = text;
-        _messageArea->addContent("[" + current_user + "]: " + text, messageArea::userType::currentUser);
 
-        try {
-            //TODO 将聊天记录写入本地SQLite
-           my_db.my_init(current_user);
-           my_db.my_chatInsert(current_user,current_user,text);
+        const std::string send_time = nowLocalTimestamp();
+        json_data["sendTime"] = send_time;
 
-        } catch (std::exception &error) {
-            std::cerr << error.what() << std::endl;
+        _messageArea->addContent(current_user, send_time, text, messageBubble::userType::currentUser);
+
+        if (sqliteDB != nullptr) {
+            sqliteDB->chatDataInsert(current_user, text, send_time);
         }
 
         message outgoing_message{.data = json_data.dump(), .type = message_type::text};
@@ -165,26 +167,32 @@ void mainWidget::initConnect(chatClient &web_api) {
     });
 }
 
-//TODO 写入聊天记录到SQLite
-void mainWidget::appendChatHistory(const std::string &sender, const std::string &text) const {
-
-}
-
 //检查接收队列并打印消息
 void mainWidget::process_received_messages(chatClient &web_api) {
     nlohmann::json read_message;
-    my_SQLite my_db;
     while (web_api.try_pop_message(read_message)) {
         const std::string type = read_message.value("type", std::string{});
         if (type == "text") {
             const auto data = read_message.value("data", nlohmann::json::object());
             const std::string sender = data.value("sender", std::string{});
             const std::string text = data.value("text", std::string{});
+            //用服务端回传的发送时间(取不到才退回本机时间): 两端存同一个值
+            const std::string send_time = data.value("sendTime", nowLocalTimestamp());
 
-            _messageArea->addContent("[" + sender + "]: " += text, messageArea::userType::otherUser);
-            //TODO写入聊天记录到本地SQLite
-            my_db.my_init(_loginWidget->getUserName());
-            my_db.my_chatInsert( _loginWidget->getUserName(),sender,text);
+            _messageArea->addContent(sender, send_time, text, messageBubble::userType::otherUser);
+            if (sqliteDB != nullptr) {
+                sqliteDB->chatDataInsert(sender, text, send_time);
+            }
+            continue;
+        }
+
+        if (type == "syncResponse") {
+            handle_sync_response(read_message.value("data", nlohmann::json::object()));
+            continue;
+        }
+
+        if (type == "error") {
+            messageBox::popup(this, read_message.value("data", std::string{}), messageBox::Type::Error);
             continue;
         }
 
@@ -201,13 +209,12 @@ void mainWidget::process_received_messages(chatClient &web_api) {
             if (success) {
                 current_user = _loginWidget->getUserName();
                 //创建聊天记录数据库
-                chatHistory = new astra_sql::SQLitepp(current_user + ".db", true);
-                
-                //TODO 创建存储聊天记录的表结构
-
-                my_db.my_init(current_user);
-                //TODO 读取本地SQLite聊天记录
-                my_db.my_chatSearch(current_user);//返回用户对应聊天记录的nlohmann::json
+                const long long uid = read_message.value("uid", 0LL);
+                sqliteDB = new my_SQLite(uid, current_user, _loginWidget->getPassword());
+                //读取SQLite聊天记录到前端
+                load_chat_history();
+                //与服务器对比同步最新聊天记录
+                request_sync(web_api);
                 show();
                 _loginWidget->close();
             }
@@ -224,10 +231,122 @@ void mainWidget::process_received_messages(chatClient &web_api) {
                 success ? messageBox::Type::Success : messageBox::Type::Error
             );
             if (success) {
-                my_db.my_Insert(_createUserWidget->getUserName(), _createUserWidget->getPassword());
                 _createUserWidget->close();
                 _loginWidget->show();
             }
         }
+    }
+}
+
+//登录成功后，把本地 SQLite 里当前用户的聊天记录写入前端
+void mainWidget::load_chat_history() const {
+    if (sqliteDB == nullptr || _messageArea == nullptr) {
+        return;
+    }
+
+    try {
+        const auto history = sqliteDB->chatDataSearch();
+        const auto senders = history.value("sender", nlohmann::json::array());
+        const auto texts = history.value("text", nlohmann::json::array());
+        const auto send_times = history.value("sendTime", nlohmann::json::array());
+
+        struct historyRow {
+            std::string sender;
+            std::string text;
+            std::string sendTime;
+        };
+        std::vector<historyRow> rows;
+
+        const std::size_t count = std::min({senders.size(), texts.size(), send_times.size()});
+        rows.reserve(count);
+        for (std::size_t i = 0; i < count; ++i) {
+            if (!senders[i].is_string() || !texts[i].is_string() || !send_times[i].is_string()) {
+                continue;
+            }
+            rows.push_back({
+                senders[i].get<std::string>(),
+                texts[i].get<std::string>(),
+                send_times[i].get<std::string>()
+            });
+        }
+
+        //按时间显示:"YYYY-MM-DD HH:MM:SS"
+        std::ranges::stable_sort(rows, [](const historyRow &a, const historyRow &b) {
+            return a.sendTime < b.sendTime;
+        });
+
+        _messageArea->clearContent();
+        for (const auto &row: rows) {
+            const auto type = row.sender == current_user
+                                  ? messageBubble::userType::currentUser
+                                  : messageBubble::userType::otherUser;
+            _messageArea->addContent(row.sender, row.sendTime, row.text, type);
+        }
+
+        std::cout << "load chat history done, uid=" << sqliteDB->getUid()
+                << ", records=" << rows.size() << std::endl;
+    } catch (const std::exception &error) {
+        std::cerr << "load chat history failed: " << error.what() << std::endl;
+    }
+}
+
+void mainWidget::request_sync(chatClient &web_api) const {
+    if (sqliteDB == nullptr) {
+        return;
+    }
+
+    const auto local_last = sqliteDB->lastMessage();
+
+    nlohmann::json request;
+    request["lastSender"] = local_last.value("sender", std::string{});
+    request["lastText"] = local_last.value("text", std::string{});
+    request["lastTime"] = local_last.value("sendTime", std::string{});
+
+    message outgoing_message{.data = request.dump(), .type = message_type::sync_requested};
+    web_api.write(outgoing_message);
+}
+
+void mainWidget::handle_sync_response(const nlohmann::json &data) const {
+    if (sqliteDB == nullptr || _messageArea == nullptr) {
+        return;
+    }
+
+    if (data.value("matched", true)) {
+        //服务端最新一条和本地一致
+        std::cout << "sync skipped: local and server agree" << std::endl;
+        return;
+    }
+
+    const auto messages = data.value("messages", nlohmann::json::array());
+    if (!messages.is_array()) {
+        return;
+    }
+
+    int added = 0;
+    for (const auto &one: messages) {
+        if (!one.is_object()) {
+            continue;
+        }
+
+        const std::string sender = one.value("sender", std::string{});
+        const std::string text = one.value("text", std::string{});
+        const std::string send_time = one.value("sendTime", std::string{});
+        if (sender.empty() || text.empty() || send_time.size() != 19) {
+            continue;
+        }
+
+        if (sqliteDB->hasMessage(sender, text, send_time)) {
+            continue;
+        }
+
+        sqliteDB->chatDataInsert(sender, text, send_time);
+        ++added;
+    }
+
+    std::cout << "sync done: server sent " << messages.size()
+            << " records, filled " << added << std::endl;
+
+    if (added > 0) {
+        load_chat_history();
     }
 }

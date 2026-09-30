@@ -353,4 +353,51 @@ namespace astra_sql {
 
         this->cmd.clear();
     }
+
+    // 取最近的若干行: order by <field> desc limit n,再翻转成升序返回
+    nlohmann::json MySQLpp::searchLatestRows(const std::string &tableName, const std::vector<std::string> &data,
+                                             const std::string &orderField, const int limit) {
+        if (data.empty() || limit <= 0) {
+            return nlohmann::json::object();
+        }
+
+        this->cmd = "select ";
+        for (size_t i = 0; i < data.size(); i++) {
+            if (i > 0) {
+                this->cmd += ',';
+            }
+            this->cmd += data[i];
+        }
+        this->cmd += " from " + tableName;
+        this->cmd += " order by " + orderField + " desc";
+        this->cmd += " limit " + std::to_string(limit);
+
+        try {
+            stmt.reset(conn->prepareStatement(this->cmd));
+
+            const std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
+            sql::ResultSetMetaData *meta = res->getMetaData();
+            const auto cols = meta->getColumnCount();
+
+            nlohmann::json result = nlohmann::json::object();
+            for (int c = 1; c <= cols; c++) {
+                result[meta->getColumnLabel(c)] = nlohmann::json::array();
+            }
+
+            //desc 取出来的行是从新到旧,这里插到最前面,最终得到升序
+            while (res->next()) {
+                for (int c = 1; c <= cols; c++) {
+                    auto &column = result[meta->getColumnLabel(c)];
+                    column.insert(column.begin(), res->getString(c));
+                }
+            }
+
+            this->cmd.clear();
+            return result;
+        } catch (const std::exception &e) {
+            this->cmd.clear();
+            std::cerr << e.what() << '\n';
+            return nlohmann::json::object();
+        }
+    }
 }

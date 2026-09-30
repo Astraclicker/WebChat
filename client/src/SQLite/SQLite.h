@@ -2,81 +2,43 @@
 #include <SQLite++/SQLitepp.h>
 #include <string>
 
+class my_SQLite {
+protected:
+    astra_sql::SQLitepp *db = nullptr;
+    long long uid = 0;
+    //用户名只写进本地的 userData 表,不参与文件名
+    std::string userName;
 
+    //用户数据表名
+    std::string userDataTable = "userData";
+    //聊天数据表名
+    std::string ChatDataTable = "chatData";
 
-class my_SQLite{
-    protected:
+public:
+    //构造函数: uid 来自服务端登录/注册响应
+    my_SQLite(long long uid, const std::string &userName, const std::string &password);
 
-
-    astra_sql::SQLitepp *db=nullptr;
-    std::string chat;
-
-    std::string kTable;
-    std::string CTable;
-
-    public:
-
-    my_SQLite();
+    //析构函数
     ~my_SQLite();
-    /*
-     *寻找对应用户的 数据表 CTable接受user值 不存在建立对应用户名的数据表
-     *user 要建立的用户名对应的消息表
-     *
-     *
-     */
-    void my_init(const std::string &user);
 
-    /*
-   * 插入数据 用户表
-   *user 用户名
-   *pass 密码
-   */
-    void my_Insert(std::string user, std::string pass);
-    /*
-    *更改 对应用户密码
-    *user 用户
-    *pass 密码
-    */
-    void my_Update(std::string user, std::string pass);
-    /*
-    * 查询用户表对应用户信息 账户密码 返回json
-    *user 用户
-    */
-    nlohmann::json my_Search(std::string user) ;
+    //向SQLite插入聊天数据
+    //sendTime: 由调用方给(收到别人消息时用服务端回传的那个值,双方存的才是同一个时间戳);
+    //          为空时退回本机当前时间(本地时区)
+    void chatDataInsert(const std::string &sender, const std::string &text, const std::string &sendTime) const;
 
-    /*
-    *将当前用户表所有用户和密码 返回为json
-    *
-    */
-    nlohmann::json my_SearchAll();
-    /*
-     *删除用户表中指定用户
-    *user 用户名
-     */
-    void my_Delete(const std::string &user);
+    //读取本用户的全部聊天记录
+    //返回 {"sender":[...],"text":[...],"sendTime":[...]},各列等长、按行号对齐(见 SQLitepp::sqlitSearchItem)
+    nlohmann::json chatDataSearch() const;
 
+    //本地"最新的那一条"(按 sendTime 取最大,和服务端比对时的口径一致)
+    //一条都没有时返回空对象
+    nlohmann::json lastMessage();
 
-    /*
-    *插入数据 消息表 需要用户 发送人 文本
-    *user 拥有消息的用户
-    *spend 发送消息的用户
-    *text 消息
-    */
-    void my_chatInsert(std::string user,std::string spend,std::string text);
-    /*
-     *需先my_init 选中指定的用户表
-       *返回 指定 用户 的聊天记录
-       *user 用户名
+    //本地是否已经有这一条(登录补拉时用来去重)
+    bool hasMessage(const std::string &sender, const std::string &text, const std::string &sendTime) const;
 
-
-       */
-    nlohmann::json my_chatSearch(const std::string &user) ;
-    /*
-     *需先my_init 选中指定的用户表
-        *删除消息表中指定id的消息
-        *id
-        *
-        */
-    void my_chatdelete(const std::string &id);
-
+    //本地库对应的 uid(库文件名就是 <uid>.db)
+    [[nodiscard]] long long getUid() const {
+        return uid;
+    }
 };

@@ -1,5 +1,4 @@
 #include "client.h"
-#include "../SQLite/SQLite.h"
 #include <iostream>
 #include <memory>
 
@@ -8,7 +7,6 @@ chatClient::chatClient(
     boost::asio::io_context &io,
     const tcp::resolver::results_type &endpoints
 ) : io_(io), clientSocket(io) {
-    //TODO sqlite创表 my
     Connect(endpoints);
 }
 
@@ -21,6 +19,7 @@ void chatClient::Connect(const tcp::resolver::results_type &endpoints) {
                 std::cout << "[client]" << "connect to " << clientSocket.remote_endpoint() << std::endl;
                 doRead();
             } else {
+                linkBroken = true;
                 std::cerr << "[client]connect failed: " << errorCode.message() << std::endl;
             }
         }
@@ -49,6 +48,7 @@ void chatClient::doRead() {
                 }
                 doRead();
             } else {
+                linkBroken = true;
                 std::cerr << "[client]read error: " << errorCode.message() << std::endl;
             }
         });
@@ -73,6 +73,16 @@ void chatClient::write(message &outgoing_message) {
             sendJson["data"] = nlohmann::json::parse(outgoing_message.data);
             break;
         }
+        case message_type::sync_requested: {
+            sendJson["type"] = "syncRequested";
+            sendJson["data"] = nlohmann::json::parse(outgoing_message.data);
+            break;
+        }
+    }
+
+    if (linkBroken) {
+        std::cerr << "[client]drop message: connection is broken" << std::endl;
+        return;
     }
 
     boost::asio::post(io_, [this, sendJson]() {
@@ -95,13 +105,15 @@ void chatClient::doWrite() {
         clientSocket,
         boost::asio::buffer(*payload),
         //写入完成调用回调函数,弹出第一条数据
-        [this, payload](const boost::system::error_code &errorCode, std::size_t) {
+        [this](const boost::system::error_code &errorCode, std::size_t) {
             if (!errorCode) {
                 writeMsgs.pop_front();
                 if (!writeMsgs.empty()) {
                     doWrite();
                 }
             } else {
+                linkBroken = true;
+                writeMsgs.clear();
                 std::cerr << "[client]write error: " << errorCode.message() << std::endl;
             }
         });
@@ -109,6 +121,7 @@ void chatClient::doWrite() {
 
 //关闭本客户端连接
 void chatClient::close() {
+    linkBroken = true;
     boost::asio::post(io_, [this]() {
         clientSocket.close();
     });

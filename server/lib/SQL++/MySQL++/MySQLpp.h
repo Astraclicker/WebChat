@@ -115,5 +115,16 @@ namespace astra_sql {
          */
         nlohmann::json searchItem(const std::string &tableName, const std::vector<std::string> &data,
                                   const itemRule &rule);
+
+        /**
+         * @brief 取最近的若干行(按某个字段降序取,再按同一字段升序返回)
+         * @param tableName 表名
+         * @param data 要查的列(不能为空)
+         * @param orderField 用来排序的字段(通常是时间字段或自增主键)
+         * @param limit 最多返回多少行
+         * @return {"列名":[值...]},各列等长、按 orderField 升序;失败或没有记录返回空对象
+         */
+        nlohmann::json searchLatestRows(const std::string &tableName, const std::vector<std::string> &data,
+                                        const std::string &orderField, int limit);
     };
 }

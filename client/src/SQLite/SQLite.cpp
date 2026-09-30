@@ -1,114 +1,109 @@
-
 #include "SQLite.h"
-
-#include <chrono>
-#include <ctime>
-#include <cstdio>
+#include <algorithm>
+#include <def.h>
+#include <iostream>
 #include <string>
-#include <cstdint>
 using namespace astra_sql;
-using  std::vector;
-using  std::string;
+using std::vector;
+using std::string;
 
-
-
-
-
-my_SQLite::my_SQLite(){
-    static SQLitepp inst("sqlite.db", false);
-    kTable="user";
-    static bool once = [] {
-        if (inst.sqliteTableExists("user")) {
-            return true;
-        }
+my_SQLite::my_SQLite(const long long uid, const std::string &userName, const std::string &password)
+    : uid(uid), userName(userName) {
+    //库名用 uid: 用户名可能是中文,直接当文件名会乱码
+    db = new SQLitepp(std::to_string(uid) + ".db", false);
+    if (!db->sqliteTableExists(userDataTable)) {
+        //用户表结构
         const vector<createTableRule> cols{
-            //用户表结构
-            {"uid", "INTEGER", "PRIMARY KEY AUTOINCREMENT"},
-            {"username", "TEXT", "NOT NULL UNIQUE"},
-            {"pass", "TEXT", "NOT NULL"},
+            {"userName", "TEXT", "NOT NULL UNIQUE"},
+            {"password", "TEXT", "NOT NULL"},
         };
-
-
-        inst.sqliteCreateTable("user", cols, nullptr, nullptr);
-        return true;
-
-    } ();
-    (void)once;
-    db=&inst;
-}
-my_SQLite::~my_SQLite() = default;
-void my_SQLite::my_init(const std::string &user) {
-    CTable=user;
-
-    if (db->sqliteTableExists(CTable)) {
-        return;
+        db->sqliteCreateTable(userDataTable, cols, nullptr, nullptr);
     }
-    const vector<createTableRule> chat{
-                    {"cid",    "INTEGER", "PRIMARY KEY AUTOINCREMENT"},
-                    {"owner",  "TEXT",    "NOT NULL"},
-                    {"sender", "TEXT",    "NOT NULL"},
-                    {"text",   "TEXT",    "NOT NULL"},
-                    {"ts",     "INTEGER", "NOT NULL"},
-                };
-
-            db->sqliteCreateTable(CTable, chat, nullptr, nullptr);
-
-
-
+    if (!db->sqliteTableExists(ChatDataTable)) {
+        //聊天数据表结构
+        const vector<createTableRule> chat{
+            {"sender", "TEXT", "NOT NULL"},
+            {"text", "TEXT", "NOT NULL"},
+            {"sendTime", "TEXT", "NOT NULL"},
+        };
+        db->sqliteCreateTable(ChatDataTable, chat, nullptr, nullptr);
+    }
+    //创建表之后直接插入用户数据(存在的是用户名,不是 uid)
+    //注意: userName 上有 UNIQUE 约束,同一用户第二次登录这条必然失败,只提示不影响使用
+    const auto user_result = db->sqliteInsertItem(
+        userDataTable,
+        {{"userName", userName}, {"password", password}},
+        {sqliteDataType::Text, sqliteDataType::Text}
+    );
+    if (user_result != SQLppError::success) {
+        std::cerr << "insert local user row failed (uid=" << uid << ", user=" << userName
+                << ", maybe already exists), code=" << static_cast<int>(user_result) << std::endl;
+    }
 }
 
-void my_SQLite::my_Insert(string user, string pass) {
-    db->sqliteInsertItem(
-        kTable, //表名
-        {{"username", user}, {"pass", pass}}, // item：顺序即绑定顺序
+my_SQLite::~my_SQLite() = default;
+
+void my_SQLite::chatDataInsert(const std::string &sender, const std::string &text, const std::string &sendTime) const {
+    const std::string stamp = (sendTime.size() == 19) ? sendTime : nowLocalTimestamp();
+
+    const auto result = db->sqliteInsertItem(
+        ChatDataTable, //表名
+        {{"sender", sender}, {"text", text}, {"sendTime", stamp}},
         {
-            sqliteDataType::Text, // type：长度必须相同
-            sqliteDataType::Text
+            sqliteDataType::Text,
+            sqliteDataType::Text,
+            sqliteDataType::Text,
         });
+
+    //失败必须自己打日志: 这个函数不会抛异常,只靠返回值表示结果
+    if (result != SQLppError::success) {
+        std::cerr << "insert chat data failed (uid=" << uid << ", user=" << userName
+                << ", sender=" << sender << "), code=" << static_cast<int>(result) << std::endl;
+    }
 }
 
-void my_SQLite::my_Update(string user, string pass){
-    db->sqliteUpdateItem(
-        kTable, //表名
-        {{"pass", pass}}, // 要改的字段
-        {{"username", "=", user, "AND"}}); // where 条件
-}
-
-nlohmann::json my_SQLite::my_Search(string user) {
+//读取本用户的全部聊天记录
+nlohmann::json my_SQLite::chatDataSearch() const {
     return db->sqlitSearchItem(
-        kTable, //表名
-        {"uid", "username", "pass"}, // 要查的内容，不能为空
-        {{"username", "=", user, "AND"}}); // 空则查全部
+        ChatDataTable, //表名
+        {"sender", "text", "sendTime"}, //要查的列,不能为空
+        {}); //查询条件: 空 = 全部
 }
 
+nlohmann::json my_SQLite::lastMessage() {
+    const auto all = chatDataSearch();
+    const auto senders = all.value("sender", nlohmann::json::array());
+    const auto texts = all.value("text", nlohmann::json::array());
+    const auto times = all.value("sendTime", nlohmann::json::array());
 
-nlohmann::json my_SQLite::my_SearchAll() {
-    // 第三个参数传空 = 不带 where；注意第二个参数（列）不能为空，否则 SQL 语法错
-    return db->sqlitSearchItem(kTable, {"uid", "username", "pass"}, {});
+    const std::size_t count = std::min({senders.size(), texts.size(), times.size()});
+    if (count == 0) {
+        return nlohmann::json::object();
+    }
+
+    //"YYYY-MM-DD HH:MM:SS" 直接按字符串比大小就是按时间比大小
+    std::size_t newest = 0;
+    for (std::size_t i = 1; i < count; ++i) {
+        if (times[i].get<std::string>() >= times[newest].get<std::string>()) {
+            newest = i;
+        }
+    }
+
+    nlohmann::json row;
+    row["sender"] = senders[newest];
+    row["text"] = texts[newest];
+    row["sendTime"] = times[newest];
+    return row;
 }
 
-void my_SQLite::my_Delete(const string &user) {
-    db->sqliteDelItem(kTable, {{"username", "=", user, "AND"}});
-}
-
-void my_SQLite::my_chatInsert(string user, string spend,string text) {
-    time_t t = time(nullptr);
-     // 时间戳
-    db->sqliteInsertItem(
-        CTable, //表名
-        {{"owner", user}, {"sender", spend}, {"text", text},{"ts",std::to_string(t)}}, // item：顺序即绑定顺序
+bool my_SQLite::hasMessage(const std::string &sender, const std::string &text, const std::string &sendTime) const {
+    const auto found = db->sqlitSearchItem(
+        ChatDataTable,
+        {"sender"}, //只要有一列返回就说明存在
         {
-            sqliteDataType::Text, // type：长度必须相同
-            sqliteDataType::Text,
-            sqliteDataType::Text,
-            sqliteDataType::Int64
+            {"sender", "=", sender, "AND"},
+            {"text", "=", text, "AND"},
+            {"sendTime", "=", sendTime, "AND"}
         });
+    return !found.value("sender", nlohmann::json::array()).empty();
 }
-//由于只接受string 自然传string
-void my_SQLite::my_chatdelete(const string &id) {
-    db->sqliteDelItem(CTable, {{"cid", "=", id, "AND"}});
-}
-
-nlohmann::json my_SQLite::my_chatSearch(const string &user) {
-    return db->sqlitSearchItem(CTable, {"cid", "owner", "sender","text","ts"}, {{"owner", "=", user, "AND"}});
-};

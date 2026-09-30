@@ -1,12 +1,16 @@
 #pragma once
-#include "serverWidget.h"
+#include "loginWidget.h"
+#include "createUserWidget.h"
+#include "messageArea.h"
 #include <QWidget>
 #include <QPropertyAnimation>
 #include <QApplication>
 #include <QPlainTextEdit>
+#include <QPushButton>
 #include <QTimer>
 #include "../Web/client.h"
 #include <SQLite++/SQLitepp.h>
+#include "../SQLite/SQLite.h"
 
 
 class mainWidget : public QWidget {
@@ -29,12 +33,24 @@ protected:
     // Qt 定时器只做一次非阻塞取队列，不在 GUI 线程中忙等网络响应。
     void process_received_messages(chatClient &web_api);
 
+    //登录成功后，把本地 SQLite 里当前用户的聊天记录读回消息区
+    void load_chat_history() const;
+
+    //登录后和服务端对比最后一条聊天记录,是否同步服务端聊天记录
+    void request_sync(chatClient &web_api) const;
+
+    //处理服务端的比对结果,把缺的那一段补进本地并重新渲染
+    void handle_sync_response(const nlohmann::json &data) const;
+
     QTimer *message_poll_timer;
     QTimer *request_timeout_timer;
     pending_request_type pending_request = pending_request_type::none;
 
     //当前登录的用户名，用于定位该用户的聊天记录文件
     std::string current_user;
+
+    //维护本地SQLite
+    my_SQLite *sqliteDB = nullptr;
 
     //多行文本输入框
     QPlainTextEdit *message_input;
@@ -44,9 +60,6 @@ protected:
 
     //初始化信号与槽的连接
     void initConnect(chatClient &web_api);
-
-    //把一条聊天消息追加写入当前用户的本地记录文件
-    void appendChatHistory(const std::string &sender, const std::string &text) const;
 
 public:
     //构造函数

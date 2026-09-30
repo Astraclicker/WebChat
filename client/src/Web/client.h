@@ -1,6 +1,6 @@
 #pragma once
 #include <boost/asio.hpp>
-#include <string>
+#include <atomic>
 #include <deque>
 #include <mutex>
 #include<def.h>
@@ -15,6 +15,9 @@ protected:
 
     //保存发送的消息的队列
     std::deque<nlohmann::json> writeMsgs;
+
+    //连接状态
+    std::atomic<bool> linkBroken{false};
 
     // Asio 与 Qt 分属不同线程，接收队列通过互斥保护的接口访问。
     std::mutex requested_mutex;
@@ -40,6 +43,11 @@ public:
 
     //断开与服务端的连接
     void close();
+
+    //连接是否可用(GUI 线程调用)
+    [[nodiscard]] bool is_connected() const {
+        return !linkBroken.load();
+    }
 
     // Qt 线程以非阻塞方式取走一条消息；队列为空时立即返回。
     bool try_pop_message(nlohmann::json &incoming_message);

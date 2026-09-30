@@ -37,15 +37,22 @@ protected:
     //从readBuffer中读取数据并调用广播函数
     void doRead();
 
-    //把一条消息存进发送者那张聊天记录表
-    void saveMyChatHistory(const std::string &sender, const std::string &text);
+    //把一条消息存进聊天记录表(全服同一张)
+    //sendTime 由发送方给出,双方存同一个值(登录时才能比对"最后一条")
+    void saveMyChatHistory(const std::string &sender, const std::string &text, const std::string &sendTime);
 
     //广播给会话集合中的每一个客户端
-    void broadCast(const std::string &msg, const std::string &receiver) const;
+    void broadCast(const std::string &msg, const std::string &receiver, const std::string &sendTime) const;
+
+    //登录后的比对+补拉: 本地最后一条和服务端最后一条不一致时,把最近的一批记录发回去
+    void handle_sync(const nlohmann::json &data);
 
 public:
     //本socket用户名
     std::string myUserName{};
+
+    //本socket用户在 users 表里的自增主键(登录状态判据)
+    long long myUid = 0;
 
     //构造函数,连接池把接口对象改为引用,参数传引用
     session(tcp::socket socket,
