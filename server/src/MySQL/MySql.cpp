@@ -1,5 +1,6 @@
 #include "MySql.h"
 #include <iostream>
+#include <log.h>
 #include <memory>
 #include <vector>
 #include <def.h>
@@ -63,7 +64,7 @@ bool createUser(
     long long new_uid = 0;
     if (loginUserName.empty() || password.empty()) {
         // 协议请求必须有且仅有一次响应；校验失败也不能直接返回让客户端一直等待。
-        std::cout << "createUser failed: empty userName or password" << std::endl;
+        LOG(astra_log::Level::Info, "createUser failed: empty userName or password");
     } else {
         const astra_sql::item userData{
             {"userName", loginUserName},
@@ -159,7 +160,7 @@ void createChatHistoryTable(astra_sql::MySQLpp &mysqlAPI) {
 
         const auto result = mysqlAPI.mysqlCreateTable(kChatTableName, createRule, nullptr, nullptr);
         if (result != astra_sql::SQLppError::success) {
-            std::cerr << "create chat table failed: " << kChatTableName << std::endl;
+            LOG(astra_log::Level::Error, "create chat table failed: ", kChatTableName);
         }
     }
 }

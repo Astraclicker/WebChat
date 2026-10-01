@@ -14,6 +14,7 @@ target_include_directories(
         PUBLIC
         ${INCLUDE_DIR}
         ${SQL++_DIR}
+        ${LOG_DIR}
 )
 
 
@@ -21,4 +22,5 @@ target_link_libraries(
         ${PROJECT_NAME}
         PUBLIC
         SQLite++
+        log
 )

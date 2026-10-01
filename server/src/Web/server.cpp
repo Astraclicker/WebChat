@@ -1,5 +1,6 @@
 #include "web.h"
 #include <iostream>
+#include <log.h>
 #include <stdexcept>
 #include <vector>
 //构造函数
@@ -55,12 +56,12 @@ void server::doAccept() {
     serverAcceptor.async_accept([this](const boost::system::error_code &errorCode, tcp::socket clientSocket) {
         if (!errorCode) {
             try {
-                std::cout << clientSocket.remote_endpoint() << " connect to ";
-                std::cout << clientSocket.local_endpoint() << std::endl;
+                LOG(astra_log::Level::Info, clientSocket.remote_endpoint(), " connect to ",
+                    clientSocket.local_endpoint());
                 std::make_shared<session>(std::move(clientSocket), mysqlPool, redisAPI, sessionSet)->
                         start();
             } catch (const std::exception &error) {
-                std::cerr << "fail to initialize session" << error.what() << std::endl;
+                LOG(astra_log::Level::Error, "fail to initialize session", error.what());
             }
         }
         //无论本次是否建立会话,都继续等下一个连接

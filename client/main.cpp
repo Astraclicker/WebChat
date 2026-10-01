@@ -2,11 +2,13 @@
 #include <Web/client.h>
 #include <thread>
 #include <fstream>
-#include <iostream>
+#include <log.h>
 
 int main(int argc, char *argv[]) {
+    //设置log文件
+    astra_log::setLogFile("WebChat.log");
     if (argv[1] == nullptr) {
-        std::cerr << "must provide config file" << std::endl;
+        LOG(astra_log::Level::Error, "must provide config file");
         return 1;
     }
     std::ifstream configFile(argv[1]);
@@ -21,7 +23,7 @@ int main(int argc, char *argv[]) {
         try {
             io.run();
         } catch (std::exception &error) {
-            std::cerr << "Exception: " << error.what() << std::endl;
+            LOG(astra_log::Level::Error, "Exception: ", error.what());
         }
     });
     // 创建应用程序

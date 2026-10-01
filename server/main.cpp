@@ -1,8 +1,10 @@
 #include <iostream>
 #include <Web/web.h>
 #include <fstream>
+#include <log.h>
 
 int main(int argc, char *argv[]) {
+    astra_log::setLogFile("WebChat.log");
     try {
         //读取json配置,包括监听地址和端口,MySQL和Redis配置
         if (argv[1] == nullptr) {
@@ -15,10 +17,10 @@ int main(int argc, char *argv[]) {
 
         //创建服务器类,并运行
         server chat_server(io, configJson);
-        std::cout << "Chat server started on port " << configJson["Web"]["port"] << std::endl;
+        LOG(astra_log::Level::Info, "Chat server started on port ", configJson["Web"]["port"]);
         io.run();
     } catch (std::exception &error) {
-        std::cerr << "error: " << error.what() << std::endl;
+        LOG(astra_log::Level::Error, "error: ", error.what());
         return 1;
     }
     return 0;

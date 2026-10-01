@@ -13,6 +13,12 @@ add_library(
         messageBubble.cpp
 )
 
+target_include_directories(
+        ${PROJECT_NAME}
+        PUBLIC
+        ${LOG_DIR}
+)
+
 target_link_libraries(
         ${PROJECT_NAME}
         PUBLIC
@@ -20,4 +26,5 @@ target_link_libraries(
         Qt::Gui
         Qt::Widgets
         Web
+        log
 )

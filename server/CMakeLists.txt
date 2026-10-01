@@ -23,19 +23,27 @@ FetchContent_Declare(
         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/SQL++
 )
 
+FetchContent_Declare(
+        log
+        SOURCE_DIR ${CMAKE_SOURCE_DIR}/lib/log
+)
+
 set(INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
 set(SQL++_DIR ${CMAKE_SOURCE_DIR}/lib/SQL++)
+set(LOG_DIR ${CMAKE_SOURCE_DIR}/lib/log)
 
-#添加子目录
-add_subdirectory(src)
-
-#按配置将可执行文件输出到bin目录
 foreach (_cfg Debug Release RelWithDebInfo MinSizeRel)
     string(TOUPPER "${_cfg}" _CFG)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${_CFG} ${PROJECT_SOURCE_DIR}/bin/${_cfg})
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${_CFG} ${PROJECT_SOURCE_DIR}/bin/${_cfg})
 endforeach ()
 unset(_cfg)
 unset(_CFG)
+
+FetchContent_MakeAvailable(log)
+
+#添加子目录
+add_subdirectory(src)
 
 add_executable(${PROJECT_NAME} main.cpp)
 
@@ -50,10 +58,12 @@ target_include_directories(
         PUBLIC
         ${CMAKE_SOURCE_DIR}/lib/SQL++
         ${CMAKE_SOURCE_DIR}/src
+        ${LOG_DIR}
 )
 
 target_link_libraries(
         ${PROJECT_NAME}
         PUBLIC
         Web
+        log
 )

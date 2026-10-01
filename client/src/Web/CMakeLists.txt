@@ -14,6 +14,7 @@ target_include_directories(
         ${PROJECT_NAME}
         PUBLIC
         ${INCLUDE_DIR}
+        ${LOG_DIR}
 )
 
 target_link_libraries(
@@ -21,4 +22,5 @@ target_link_libraries(
         PUBLIC
         Boost::asio
         SQLite
+        log
 )

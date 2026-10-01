@@ -7,7 +7,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
-
+#include <log.h>
 #include "../SQLite/SQLite.h"
 
 mainWidget::mainWidget(
@@ -162,7 +162,7 @@ void mainWidget::initConnect(chatClient &web_api) {
         try {
             process_received_messages(web_api);
         } catch (const std::exception &error) {
-            std::cerr << "process message failed: " << error.what() << std::endl;
+            LOG(astra_log::Level::Error, "process message failed: ", error.what());
         }
     });
 }
@@ -283,10 +283,10 @@ void mainWidget::load_chat_history() const {
             _messageArea->addContent(row.sender, row.sendTime, row.text, type);
         }
 
-        std::cout << "load chat history done, uid=" << sqliteDB->getUid()
-                << ", records=" << rows.size() << std::endl;
+        LOG(astra_log::Level::Info, "load chat history done, uid=", sqliteDB->getUid(),
+            ", records=", rows.size());
     } catch (const std::exception &error) {
-        std::cerr << "load chat history failed: " << error.what() << std::endl;
+        LOG(astra_log::Level::Error, "load chat history failed: ", error.what());
     }
 }
 
@@ -313,7 +313,7 @@ void mainWidget::handle_sync_response(const nlohmann::json &data) const {
 
     if (data.value("matched", true)) {
         //服务端最新一条和本地一致
-        std::cout << "sync skipped: local and server agree" << std::endl;
+        LOG(astra_log::Level::Info, "sync skipped: local and server agree");
         return;
     }
 
@@ -343,8 +343,8 @@ void mainWidget::handle_sync_response(const nlohmann::json &data) const {
         ++added;
     }
 
-    std::cout << "sync done: server sent " << messages.size()
-            << " records, filled " << added << std::endl;
+    LOG(astra_log::Level::Info, "sync done: server sent ", messages.size(),
+        " records, filled ", added);
 
     if (added > 0) {
         load_chat_history();

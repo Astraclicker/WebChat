@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
+#include <log.h>
 #include <memory>
 #include "../MySQL/MySql.h"
 #include <chrono>
@@ -45,8 +46,9 @@ void session::broadCast(const std::string &msg, const std::string &receiver, con
         //好友和群组功能作为拓展功能，目前不校验receiver，只排排除自己
         if (session != this->shared_from_this()) {
             session->deliver(frame);
-            std::cout << this->sessionSocker.remote_endpoint() << " send to ";
-            std::cout << session->sessionSocker.remote_endpoint() << std::endl;
+            //广播明细属于调试信息
+            LOG(astra_log::Level::Debug, this->sessionSocker.remote_endpoint(), " send to ",
+                session->sessionSocker.remote_endpoint());
         }
     }
 }
@@ -70,10 +72,10 @@ void session::saveMyChatHistory(const std::string &sender, const std::string &te
     //存库失败单独抛出异常日志，不影响其他功能
     try {
         if (!saveChatHistory(*mysqlPool.borrow(), sender, text, sendTime)) {
-            std::cerr << "save chat history failed: " << this->myUserName << std::endl;
+            LOG(astra_log::Level::Error, "save chat history failed: ", this->myUserName);
         }
     } catch (const std::exception &error) {
-        std::cerr << "save chat history error: " << error.what() << std::endl;
+        LOG(astra_log::Level::Error, "save chat history error: ", error.what());
     }
 }
 
@@ -136,13 +138,13 @@ void session::handle_sync(const nlohmann::json &data) {
             }
             response["data"]["messages"] = messages;
 
-            std::cout << "sync for uid " << this->myUid << ": send " << messages.size()
-                    << " recent records" << std::endl;
+            LOG(astra_log::Level::Info, "sync for uid ", this->myUid, ": send ", messages.size(),
+                " recent records");
         }
 
         deliver(response.dump() + "\n");
     } catch (const std::exception &error) {
-        std::cerr << "sync failed: " << error.what() << std::endl;
+        LOG(astra_log::Level::Error, "sync failed: ", error.what());
         nlohmann::json out;
         out["type"] = "error";
         out["data"] = "同步失败";
@@ -179,8 +181,8 @@ void session::handle_login(const std::string &login_user_name, const std::string
             if (cached_data.value("password", std::string{}) == password) {
                 bool ttl_refreshed = this->redisAPI.expire_key(cache_key, std::chrono::seconds(300));
                 if (!ttl_refreshed) {
-                    std::cerr << "login cache expired before TTL refresh: "
-                            << login_user_name << std::endl;
+                    LOG(astra_log::Level::Error, "login cache expired before TTL refresh: ",
+                        login_user_name);
                 }
                 this->myUserName = login_user_name;
                 //缓存里带着 uid,命中时不必再查库
@@ -194,11 +196,10 @@ void session::handle_login(const std::string &login_user_name, const std::string
                 response["uid"] = this->myUid;
                 deliver(response.dump() + "\n");
 
-                std::cout << "Login cache hit: "
-                        << login_user_name << std::endl;
+                LOG(astra_log::Level::Info, "Login cache hit: ", login_user_name);
 
                 //缓存命中登录成功
-                std::cout << "login success" << std::endl;
+                LOG(astra_log::Level::Info, "login success");
 
                 if (this->myUid > 0) {
                     createChatHistoryTable(*mysqlPool.borrow());
@@ -207,8 +208,7 @@ void session::handle_login(const std::string &login_user_name, const std::string
             }
         }
     } catch (const std::exception &error) {
-        std::cerr << "failed to read login cache, fallback to MySQL: "
-                << error.what() << std::endl;
+        LOG(astra_log::Level::Error, "failed to read login cache, fallback to MySQL: ", error.what());
     }
     std::string auth_user_name;
     long long auth_uid = 0;
@@ -247,13 +247,9 @@ void session::handle_login(const std::string &login_user_name, const std::string
         redisAPI.set_string(cache_key,
                             cache_value.dump(),
                             std::chrono::seconds(300));
-        std::cout << "login cache stored: "
-                << auth_user_name
-                << std::endl;
+        LOG(astra_log::Level::Info, "login cache stored: ", auth_user_name);
     } catch (const std::exception &error) {
-        std::cerr << "fail to store login cache: "
-                << error.what()
-                << std::endl;
+        LOG(astra_log::Level::Error, "fail to store login cache: ", error.what());
     }
 }
 
@@ -286,11 +282,10 @@ void session::handle_create_user(const std::string &login_user_name, const std::
                                                       cache_value.dump(),
                                                       std::chrono::seconds(300));
         if (!cache_stored) {
-            std::cerr << "fail to store login cache when create user" << login_user_name << std::endl;
+            LOG(astra_log::Level::Error, "fail to store login cache when create user", login_user_name);
         }
     } catch (std::exception &error) {
-        std::cerr << "fail to store login cache when create user"
-                << error.what() << std::endl;
+        LOG(astra_log::Level::Error, "fail to store login cache when create user", error.what());
     }
 }
 
@@ -333,7 +328,7 @@ void session::doRead() {
                         }
                     }
                 } catch (const std::exception &error) {
-                    std::cerr << error.what() << std::endl;
+                    LOG(astra_log::Level::Error, error.what());
                 }
                 doRead();
             } else {

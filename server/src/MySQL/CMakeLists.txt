@@ -16,6 +16,7 @@ target_include_directories(
         PUBLIC
         ${INCLUDE_DIR}
         ${SQL++_DIR}
+        ${LOG_DIR}
 )
 
 target_link_libraries(
@@ -23,4 +24,5 @@ target_link_libraries(
         PUBLIC
         MySQL++
         Boost::asio
+        log
 )

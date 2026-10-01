@@ -1,5 +1,6 @@
 #include "client.h"
 #include <iostream>
+#include <log.h>
 #include <memory>
 
 //构造函数
@@ -16,11 +17,11 @@ void chatClient::Connect(const tcp::resolver::results_type &endpoints) {
         endpoints,
         [this](const boost::system::error_code &errorCode, const tcp::endpoint &) {
             if (!errorCode) {
-                std::cout << "[client]" << "connect to " << clientSocket.remote_endpoint() << std::endl;
+                LOG(astra_log::Level::Info, "[client]connect to ", clientSocket.remote_endpoint());
                 doRead();
             } else {
                 linkBroken = true;
-                std::cerr << "[client]connect failed: " << errorCode.message() << std::endl;
+                LOG(astra_log::Level::Error, "[client]connect failed: ", errorCode.message());
             }
         }
     );
@@ -44,12 +45,12 @@ void chatClient::doRead() {
                     std::lock_guard lock(requested_mutex);
                     requested_messages.push_back(readMsg);
                 } catch (std::exception &error) {
-                    std::cerr << error.what() << std::endl;
+                    LOG(astra_log::Level::Error, error.what());
                 }
                 doRead();
             } else {
                 linkBroken = true;
-                std::cerr << "[client]read error: " << errorCode.message() << std::endl;
+                LOG(astra_log::Level::Error, "[client]read error: ", errorCode.message());
             }
         });
 }
@@ -81,7 +82,7 @@ void chatClient::write(message &outgoing_message) {
     }
 
     if (linkBroken) {
-        std::cerr << "[client]drop message: connection is broken" << std::endl;
+        LOG(astra_log::Level::Error, "[client]drop message: connection is broken");
         return;
     }
 
@@ -114,7 +115,7 @@ void chatClient::doWrite() {
             } else {
                 linkBroken = true;
                 writeMsgs.clear();
-                std::cerr << "[client]write error: " << errorCode.message() << std::endl;
+                LOG(astra_log::Level::Error, "[client]write error: ", errorCode.message());
             }
         });
 }

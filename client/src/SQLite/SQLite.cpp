@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <def.h>
 #include <iostream>
+#include <log.h>
 #include <string>
 using namespace astra_sql;
 using std::vector;
@@ -36,8 +37,9 @@ my_SQLite::my_SQLite(const long long uid, const std::string &userName, const std
         {sqliteDataType::Text, sqliteDataType::Text}
     );
     if (user_result != SQLppError::success) {
-        std::cerr << "insert local user row failed (uid=" << uid << ", user=" << userName
-                << ", maybe already exists), code=" << static_cast<int>(user_result) << std::endl;
+        LOG(astra_log::Level::Error,
+            "insert local user row failed (uid=", uid, ", user=", userName,
+            ", maybe already exists), code=", static_cast<int>(user_result));
     }
 }
 
@@ -57,8 +59,9 @@ void my_SQLite::chatDataInsert(const std::string &sender, const std::string &tex
 
     //失败必须自己打日志: 这个函数不会抛异常,只靠返回值表示结果
     if (result != SQLppError::success) {
-        std::cerr << "insert chat data failed (uid=" << uid << ", user=" << userName
-                << ", sender=" << sender << "), code=" << static_cast<int>(result) << std::endl;
+        LOG(astra_log::Level::Error,
+            "insert chat data failed (uid=", uid, ", user=", userName,
+            ", sender=", sender, "), code=", static_cast<int>(result));
     }
 }
 
