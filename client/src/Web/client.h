@@ -7,7 +7,8 @@
 #include<json.hpp>
 using boost::asio::ip::tcp;
 
-class chatClient {
+class chatClient
+{
 protected:
     boost::asio::io_context &io_;
     tcp::socket clientSocket;

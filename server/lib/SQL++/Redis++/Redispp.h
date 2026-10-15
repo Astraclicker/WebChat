@@ -1,19 +1,13 @@
 #pragma once
 #include <string>
-#include <memory>//提供智能指针
-#include <chrono>//明确单位超时
+#include <memory>
+#include <chrono>
 #include <optional>
-
- 
-
-#include "../include/SQL.h"
-
 #include <sw/redis++/redis++.h>
 
 namespace astra_sql {
     class Redispp {
     private:
-
         // Redis操作接口
         std::unique_ptr<sw::redis::Redis> redis_client;
 
@@ -52,9 +46,9 @@ namespace astra_sql {
          * @brief 设置指定键的值和ttl
          */
         bool set_string(const std::string &key,
-            const std::string &value,
-            const std::chrono::seconds ttl );
-        
+                        const std::string &value,
+                        const std::chrono::seconds &ttl);
+
         /**
          * @brief 删除指定键,删除成功返回true
          */
@@ -68,7 +62,6 @@ namespace astra_sql {
         /**
          * @brief 刷新已有键的生存时间
          */
-        bool expire_key(const std::string &key,std::chrono::seconds ttl);
-
+        bool expire_key(const std::string &key, std::chrono::seconds ttl);
     };
 }

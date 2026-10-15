@@ -16,7 +16,8 @@ int main(int argc, char *argv[]) {
 
     boost::asio::io_context io;
     tcp::resolver resolver(io);
-    const auto endpoints = resolver.resolve(configJson["Web"]["address"], configJson["Web"]["port"]);
+    const auto endpoints = resolver.
+        resolve(configJson["Web"]["address"], configJson["Web"]["port"]);
     chatClient chat(io, endpoints);
 
     std::thread client_thread([&]() {

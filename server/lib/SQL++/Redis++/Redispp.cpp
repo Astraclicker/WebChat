@@ -12,7 +12,7 @@ namespace astra_sql {
         //使用临时对象
         sw::redis::ConnectionOptions connection_options;
         sw::redis::ConnectionPoolOptions conneciton_pool_option;
-        conneciton_pool_option.size = 4;//池总量
+        conneciton_pool_option.size = 1024; //池总量
         conneciton_pool_option.wait_timeout = std::chrono::milliseconds(500);
         connection_options.host = hostName;
         connection_options.port = port;
@@ -32,38 +32,33 @@ namespace astra_sql {
 
 
         redis_client = std::make_unique<sw::redis::Redis>
-        (connection_options,conneciton_pool_option);
+                (connection_options, conneciton_pool_option);
     }
 
-    std::optional<std::string> Redispp::get_string(const std::string &key)
-    {
+    std::optional<std::string> Redispp::get_string(const std::string &key) {
         const auto redis_value = redis_client->get(key);
-        if(!redis_value)
-        {
+        if (!redis_value) {
             return std::nullopt;
         }
         return *redis_value;
     }
 
     bool Redispp::set_string(const std::string &key,
-    const std::string &value,
-    const std::chrono::seconds ttl)
-    {
-        return redis_client->set(key,value,ttl);
+                             const std::string &value,
+                             const std::chrono::seconds &ttl) {
+        return redis_client->set(key, value, ttl);
     }
 
-    bool Redispp::delete_key(const std::string &key)
-    {
+    bool Redispp::delete_key(const std::string &key) {
         const long long deleted_count = redis_client->del(key);
         return deleted_count > 0;
     }
 
-    bool Redispp::connect_check()
-    {
+    bool Redispp::connect_check() {
         return redis_client->ping() == "PONG";
     }
-    bool Redispp::expire_key(const std::string &key,std::chrono::seconds ttl)
-    {
-        return redis_client->expire(key,ttl);
+
+    bool Redispp::expire_key(const std::string &key, std::chrono::seconds ttl) {
+        return redis_client->expire(key, ttl);
     }
 }

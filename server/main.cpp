@@ -13,9 +13,8 @@ int main(int argc, char *argv[]) {
         std::ifstream configFile(argv[1]);
         nlohmann::json configJson = nlohmann::json::parse(configFile);
 
-        boost::asio::io_context io;
-
         //创建服务器类,并运行
+        boost::asio::io_context io;
         server chat_server(io, configJson);
         LOG(astra_log::Level::Info, "Chat server started on port ", configJson["Web"]["port"]);
         io.run();

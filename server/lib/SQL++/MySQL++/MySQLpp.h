@@ -2,6 +2,8 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <queue>
+#include <atomic>
 
 #include <mysql_driver.h>
 #include <cppconn/connection.h>
@@ -33,8 +35,8 @@ namespace astra_sql {
          * @param password MySQL密码
          */
 
-        MySQLpp(const std::string &host, unsigned int port, 
-            const std::string &UserName, const std::string &password);
+        MySQLpp(const std::string &host, unsigned int port,
+                const std::string &UserName, const std::string &password);
 
         // 析构函数
         ~MySQLpp() = default;
@@ -126,5 +128,40 @@ namespace astra_sql {
          */
         nlohmann::json searchLatestRows(const std::string &tableName, const std::vector<std::string> &data,
                                         const std::string &orderField, int limit);
+    };
+
+    class MySQLppConnectPoll {
+    protected:
+        //存放连接的队列
+        std::queue<std::unique_ptr<MySQLpp> > connectQueue;
+
+        //最大连接数
+        std::atomic<unsigned long long> MaxConnectNums = 1024;
+
+        //当前连接数
+        std::atomic<unsigned long long> currentConnectNums = 0;
+
+        //MySQL连接参数
+        std::string host;
+        short port;
+        std::string userName;
+        std::string password;
+
+        //MySQL连接池构造函数
+        MySQLppConnectPoll();
+
+        //扩容连接池
+        void biggerPool();
+
+    public:
+        //初始化连接池
+        static void initMySQLppConnectPoll(const std::string &host, short port, const std::string &userName,
+                                           const std::string &password, unsigned long long MaxConnectNums);
+
+        //获取连接池中的一条连接
+        MySQLpp *acquire();
+
+        //归还连接
+        void release(MySQLpp *conn);
     };
 }

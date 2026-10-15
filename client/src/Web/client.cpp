@@ -86,13 +86,14 @@ void chatClient::write(message &outgoing_message) {
         return;
     }
 
-    boost::asio::post(io_, [this, sendJson]() {
-        const bool writeInProgress = !writeMsgs.empty();
-        writeMsgs.push_back(sendJson);
-        if (!writeInProgress) {
-            doWrite();
-        }
-    });
+    boost::asio::post(io_,
+                      [this, sendJson]() {
+                          const bool writeInProgress = !writeMsgs.empty();
+                          writeMsgs.push_back(sendJson);
+                          if (!writeInProgress) {
+                              doWrite();
+                          }
+                      });
 }
 
 //将writeMsgs中的第一条数据写入clientSocket
@@ -123,9 +124,10 @@ void chatClient::doWrite() {
 //关闭本客户端连接
 void chatClient::close() {
     linkBroken = true;
-    boost::asio::post(io_, [this]() {
-        clientSocket.close();
-    });
+    boost::asio::post(io_,
+                      [this]() {
+                          clientSocket.close();
+                      });
 }
 
 bool chatClient::try_pop_message(nlohmann::json &incoming_message) {

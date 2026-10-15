@@ -400,4 +400,11 @@ namespace astra_sql {
             return nlohmann::json::object();
         }
     }
+
+    //初始化MySQL连接池
+    void MySQLppConnectPoll::initMySQLppConnectPoll(const std::string &host, short port, const std::string &userName,
+                                                    const std::string &password, unsigned long long MaxConnectNums) {
+        static MySQLppConnectPoll poll;
+
+    }
 }

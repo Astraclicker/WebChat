@@ -71,100 +71,129 @@ mainWidget::mainWidget(
 
 void mainWidget::initConnect(chatClient &web_api) {
     //连接登录按钮与发送登录请求
-    connect(_loginWidget, &loginWidget::loginRequested, this, [&web_api, this]() {
-        if (pending_request != pending_request_type::none) {
-            messageBox::popup(_loginWidget, "正在等待上一个请求", messageBox::Type::Info);
-            return;
-        }
+    connect(_loginWidget,
+            &loginWidget::loginRequested,
+            this,
+            [&web_api, this]() {
+                if (pending_request != pending_request_type::none) {
+                    messageBox::popup(_loginWidget, "正在等待上一个请求", messageBox::Type::Info);
+                    return;
+                }
 
-        nlohmann::json json_data;
-        json_data["userName"] = _loginWidget->getUserName();
-        json_data["password"] = _loginWidget->getPassword();
-        message outgoing_message{.data = json_data.dump(), .type = message_type::login_requested};
-        web_api.write(outgoing_message);
-        pending_request = pending_request_type::login;
-        request_timeout_timer->start(5000);
-    });
+                nlohmann::json json_data;
+                json_data["userName"] = _loginWidget->getUserName();
+                json_data["password"] = _loginWidget->getPassword();
+                message outgoing_message{.data = json_data.dump(),
+                                         .type = message_type::login_requested};
+                web_api.write(outgoing_message);
+                pending_request = pending_request_type::login;
+                request_timeout_timer->start(5000);
+            });
 
     //连接发送按钮与发送消息请求
-    connect(button_send, &QPushButton::clicked, this, [this, &web_api]() {
-        nlohmann::json json_data;
-        const std::string text = message_input->toPlainText().trimmed().toStdString();
-        if (text.empty()) {
-            messageBox::popup(this, "消息不能为空", messageBox::Type::Error);
-            return;
-        }
+    connect(button_send,
+            &QPushButton::clicked,
+            this,
+            [this, &web_api]() {
+                nlohmann::json json_data;
+                const std::string text = message_input->toPlainText().trimmed().toStdString();
+                if (text.empty()) {
+                    messageBox::popup(this, "消息不能为空", messageBox::Type::Error);
+                    return;
+                }
 
-        if (!web_api.is_connected()) {
-            messageBox::popup(this, "未连接到服务端，消息未发送", messageBox::Type::Error);
-            return;
-        }
-        json_data["text"] = text;
+                if (!web_api.is_connected()) {
+                    messageBox::popup(this, "未连接到服务端，消息未发送", messageBox::Type::Error);
+                    return;
+                }
+                json_data["text"] = text;
 
-        const std::string send_time = nowLocalTimestamp();
-        json_data["sendTime"] = send_time;
+                const std::string send_time = nowLocalTimestamp();
+                json_data["sendTime"] = send_time;
 
-        _messageArea->addContent(current_user, send_time, text, messageBubble::userType::currentUser);
+                _messageArea->addContent(current_user,
+                                         send_time,
+                                         text,
+                                         messageBubble::userType::currentUser);
 
-        if (sqliteDB != nullptr) {
-            sqliteDB->chatDataInsert(current_user, text, send_time);
-        }
+                if (sqliteDB != nullptr) {
+                    sqliteDB->chatDataInsert(current_user, text, send_time);
+                }
 
-        message outgoing_message{.data = json_data.dump(), .type = message_type::text};
-        web_api.write(outgoing_message);
-        message_input->clear();
-    });
+                message outgoing_message{.data = json_data.dump(), .type = message_type::text};
+                web_api.write(outgoing_message);
+                message_input->clear();
+            });
 
     //连接创建用户按钮与打开创建用户界面
-    connect(_loginWidget, &loginWidget::createUserRequested, this, [this]() {
-        _loginWidget->close();
-        _createUserWidget->show();
-    });
+    connect(_loginWidget,
+            &loginWidget::createUserRequested,
+            this,
+            [this]() {
+                _loginWidget->close();
+                _createUserWidget->show();
+            });
 
     //连接取消按与关闭窗口
-    connect(_loginWidget, &loginWidget::cancelRequested, this, [this]() {
-        _loginWidget->close();
-    });
+    connect(_loginWidget,
+            &loginWidget::cancelRequested,
+            this,
+            [this]() {
+                _loginWidget->close();
+            });
 
     //连接确认创建用户与发送创建用户请求
-    connect(_createUserWidget, &createUserWidget::createUserRequested, this, [&web_api, this]() {
-        if (pending_request != pending_request_type::none) {
-            messageBox::popup(_createUserWidget, "正在等待上一个请求", messageBox::Type::Info);
-            return;
-        }
+    connect(_createUserWidget,
+            &createUserWidget::createUserRequested,
+            this,
+            [&web_api, this]() {
+                if (pending_request != pending_request_type::none) {
+                    messageBox::popup(_createUserWidget, "正在等待上一个请求", messageBox::Type::Info);
+                    return;
+                }
 
-        nlohmann::json json_data;
-        json_data["userName"] = _createUserWidget->getUserName();
-        json_data["password"] = _createUserWidget->getPassword();
-        message outgoing_message{.data = json_data.dump(), .type = message_type::create_user_requested};
-        web_api.write(outgoing_message);
-        pending_request = pending_request_type::createUser;
-        request_timeout_timer->start(5000);
-    });
+                nlohmann::json json_data;
+                json_data["userName"] = _createUserWidget->getUserName();
+                json_data["password"] = _createUserWidget->getPassword();
+                message outgoing_message{.data = json_data.dump(),
+                                         .type = message_type::create_user_requested};
+                web_api.write(outgoing_message);
+                pending_request = pending_request_type::createUser;
+                request_timeout_timer->start(5000);
+            });
 
     //连接取消创建用户与关闭创建用户界面
-    connect(_createUserWidget, &createUserWidget::cancelRequested, this, [this]() {
-        _createUserWidget->close();
-        _loginWidget->show();
-    });
+    connect(_createUserWidget,
+            &createUserWidget::cancelRequested,
+            this,
+            [this]() {
+                _createUserWidget->close();
+                _loginWidget->show();
+            });
 
     //连接请求超时与处理
-    connect(request_timeout_timer, &QTimer::timeout, this, [this]() {
-        QWidget *request_window = pending_request == pending_request_type::createUser
-                                      ? static_cast<QWidget *>(_createUserWidget)
-                                      : static_cast<QWidget *>(_loginWidget);
-        pending_request = pending_request_type::none;
-        messageBox::popup(request_window, "请求超时", messageBox::Type::Error);
-    });
+    connect(request_timeout_timer,
+            &QTimer::timeout,
+            this,
+            [this]() {
+                QWidget *request_window = pending_request == pending_request_type::createUser
+                                              ? static_cast<QWidget *>(_createUserWidget)
+                                              : static_cast<QWidget *>(_loginWidget);
+                pending_request = pending_request_type::none;
+                messageBox::popup(request_window, "请求超时", messageBox::Type::Error);
+            });
 
     //设置轮询检查接收队列
-    connect(message_poll_timer, &QTimer::timeout, this, [&web_api, this]() {
-        try {
-            process_received_messages(web_api);
-        } catch (const std::exception &error) {
-            LOG(astra_log::Level::Error, "process message failed: ", error.what());
-        }
-    });
+    connect(message_poll_timer,
+            &QTimer::timeout,
+            this,
+            [&web_api, this]() {
+                try {
+                    process_received_messages(web_api);
+                } catch (const std::exception &error) {
+                    LOG(astra_log::Level::Error, "process message failed: ", error.what());
+                }
+            });
 }
 
 //检查接收队列并打印消息
@@ -192,7 +221,9 @@ void mainWidget::process_received_messages(chatClient &web_api) {
         }
 
         if (type == "error") {
-            messageBox::popup(this, read_message.value("data", std::string{}), messageBox::Type::Error);
+            messageBox::popup(this,
+                              read_message.value("data", std::string{}),
+                              messageBox::Type::Error);
             continue;
         }
 
@@ -250,7 +281,8 @@ void mainWidget::load_chat_history() const {
         const auto texts = history.value("text", nlohmann::json::array());
         const auto send_times = history.value("sendTime", nlohmann::json::array());
 
-        struct historyRow {
+        struct historyRow
+        {
             std::string sender;
             std::string text;
             std::string sendTime;
@@ -271,20 +303,24 @@ void mainWidget::load_chat_history() const {
         }
 
         //按时间显示:"YYYY-MM-DD HH:MM:SS"
-        std::ranges::stable_sort(rows, [](const historyRow &a, const historyRow &b) {
-            return a.sendTime < b.sendTime;
-        });
+        std::ranges::stable_sort(rows,
+                                 [](const historyRow &a, const historyRow &b) {
+                                     return a.sendTime < b.sendTime;
+                                 });
 
         _messageArea->clearContent();
-        for (const auto &row: rows) {
+        for (const auto &row : rows) {
             const auto type = row.sender == current_user
                                   ? messageBubble::userType::currentUser
                                   : messageBubble::userType::otherUser;
             _messageArea->addContent(row.sender, row.sendTime, row.text, type);
         }
 
-        LOG(astra_log::Level::Info, "load chat history done, uid=", sqliteDB->getUid(),
-            ", records=", rows.size());
+        LOG(astra_log::Level::Info,
+            "load chat history done, uid=",
+            sqliteDB->getUid(),
+            ", records=",
+            rows.size());
     } catch (const std::exception &error) {
         LOG(astra_log::Level::Error, "load chat history failed: ", error.what());
     }
@@ -323,7 +359,7 @@ void mainWidget::handle_sync_response(const nlohmann::json &data) const {
     }
 
     int added = 0;
-    for (const auto &one: messages) {
+    for (const auto &one : messages) {
         if (!one.is_object()) {
             continue;
         }
@@ -343,8 +379,11 @@ void mainWidget::handle_sync_response(const nlohmann::json &data) const {
         ++added;
     }
 
-    LOG(astra_log::Level::Info, "sync done: server sent ", messages.size(),
-        " records, filled ", added);
+    LOG(astra_log::Level::Info,
+        "sync done: server sent ",
+        messages.size(),
+        " records, filled ",
+        added);
 
     if (added > 0) {
         load_chat_history();
